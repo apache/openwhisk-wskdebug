@@ -16,7 +16,7 @@
 #
 
 github:
-  description: "Apache OpenWhisk is an open source serverless cloud platform"
+  description: "Debugging and live development tool for Apache OpenWhisk "
   homepage: https://openwhisk.apache.org/
   labels:
   - openwhisk
