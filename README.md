@@ -1,8 +1,8 @@
 <!-- disabled badges
 cli: ![](https://img.shields.io/badge/cli-wskdebug-brightgreen)
-github actions: [![Actions Status](https://github.com/adobe/wskdebug/workflows/CI/badge.svg)](https://github.com/adobe/wskdebug/actions)
+github actions: [![Actions Status](https://github.com/apache/openwhisk-wskdebug/workflows/CI/badge.svg)](https://github.com/apache/openwhisk-wskdebug/actions)
 -->
-[![npm version](https://img.shields.io/npm/v/@adobe/wskdebug)](https://www.npmjs.com/package/@adobe/wskdebug) [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0) [![CircleCI](https://circleci.com/gh/adobe/wskdebug.svg?style=shield)](https://circleci.com/gh/adobe/wskdebug) [![codecov](https://codecov.io/gh/adobe/wskdebug/branch/master/graph/badge.svg)](https://codecov.io/gh/adobe/wskdebug) [![Total alerts](https://img.shields.io/lgtm/alerts/g/adobe/wskdebug.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/adobe/wskdebug/alerts/)
+[![npm version](https://img.shields.io/npm/v/wskdebug)](https://www.npmjs.com/package/wskdebug) [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0) [![codecov](https://codecov.io/gh/apache/openwhisk-wskdebug/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/openwhisk-wskdebug) [![Total alerts](https://img.shields.io/lgtm/alerts/g/apache/openwhisk-wskdebug.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/apache/openwhisk-wskdebug/alerts/)
 
 
 wskdebug
@@ -45,14 +45,14 @@ _On the left [Visual Studio Code](https://code.visualstudio.com) in debug mode. 
 To install or update run:
 
 ```
-npm install -g @adobe/wskdebug
+npm install -g wskdebug
 ```
 
 <a name="uninstall"></a>
 ### Uninstall
 
 ```
-npm uninstall -g @adobe/wskdebug
+npm uninstall -g wskdebug
 ```
 
 <a name="about"></a>
@@ -419,15 +419,15 @@ Options:
 
 ### Cannot install globally
 
-If you get an error during `npm install -g @adobe/wskdebug` like this:
+If you get an error during `npm install -g wskdebug` like this:
 
 ```
 ngrok - downloading binary https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-darwin-amd64.zip
-ngrok - error storing binary to local file [Error: EACCES: permission denied, open '/usr/local/lib/node_modules/@adobe/wskdebug/node_modules/ngrok/bin/aHR0cHM6Ly9iaW4uZXF1aW5veC5pby9jLzRWbUR6QTdpYUhiL25ncm9rLXN0YWJsZS1kYXJ3aW4tYW1kNjQuemlw.zip'] {
+ngrok - error storing binary to local file [Error: EACCES: permission denied, open '/usr/local/lib/node_modules/wskdebug/node_modules/ngrok/bin/aHR0cHM6Ly9iaW4uZXF1aW5veC5pby9jLzRWbUR6QTdpYUhiL25ncm9rLXN0YWJsZS1kYXJ3aW4tYW1kNjQuemlw.zip'] {
   errno: -13,
   code: 'EACCES',
   syscall: 'open',
-  path: '/usr/local/lib/node_modules/@adobe/wskdebug/node_modules/ngrok/bin/aHR0cHM6Ly9iaW4uZXF1aW5veC5pby9jLzRWbUR6QTdpYUhiL25ncm9rLXN0YWJsZS1kYXJ3aW4tYW1kNjQuemlw.zip'
+  path: '/usr/local/lib/node_modules/wskdebug/node_modules/ngrok/bin/aHR0cHM6Ly9iaW4uZXF1aW5veC5pby9jLzRWbUR6QTdpYUhiL25ncm9rLXN0YWJsZS1kYXJ3aW4tYW1kNjQuemlw.zip'
 }
 ```
 
