@@ -1,0 +1,17 @@
+# package directories
+node_modules
+jspm_packages
+
+# Serverless directories
+.serverless
+
+# node package
+*.tgz
+
+.webpack
+
+.nyc_output
+coverage
+build
+coverage.lcov
+test-results
