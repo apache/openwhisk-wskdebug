@@ -1,47 +1,68 @@
-# Contributing
+<!--
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+-->
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 
-Thanks for choosing to contribute!
+# Contributing to Apache OpenWhisk
 
-The following are a set of guidelines to follow when contributing to this project.
+Anyone can contribute to the OpenWhisk project and we welcome your contributions.
 
-## Code Of Conduct
+There are multiple ways to contribute: report bugs, improve the docs, and
+contribute code, but you must follow these prerequisites and guidelines:
 
-This project adheres to the Adobe [code of conduct](../CODE_OF_CONDUCT.md). By participating,
-you are expected to uphold this code. Please report unacceptable behavior to
-[Grp-opensourceoffice@adobe.com](mailto:Grp-opensourceoffice@adobe.com).
+ - [Contributor License Agreement](#contributor-license-agreement)
+ - [Raising issues](#raising-issues)
+ - [Coding Standards](#coding-standards)
 
-## Have A Question?
+### Contributor License Agreement
 
-Start by filing an issue. The existing committers on this project work to reach
-consensus around project direction and issue solutions within issue threads
-(when appropriate).
+All contributors must sign and submit an Apache CLA (Contributor License Agreement).
 
-## Contributor License Agreement
+Instructions on how to do this can be found here:
+[http://www.apache.org/licenses/#clas](http://www.apache.org/licenses/#clas)
 
-All third-party contributions to this project must be accompanied by a signed contributor
-license agreement. This gives Adobe permission to redistribute your contributions
-as part of the project. [Sign our CLA](http://opensource.adobe.com/cla.html). You
-only need to submit an Adobe CLA one time, so if you have submitted one previously,
-you are good to go!
+Once submitted, you will receive a confirmation email from the Apache Software Foundation (ASF) and be added to
+the following list: http://people.apache.org/unlistedclas.html.
 
-## Code Reviews
+Project committers will use this list to verify pull requests (PRs) come from contributors that have signed a CLA.
 
-All submissions should come in the form of pull requests and need to be reviewed
-by project committers. Read [GitHub's pull request documentation](https://help.github.com/articles/about-pull-requests/)
-for more information on sending pull requests.
+We look forward to your contributions!
 
-Lastly, please follow the [pull request template](PULL_REQUEST_TEMPLATE.md) when
-submitting a pull request!
+## Raising issues
 
-## From Contributor To Committer
+Please raise any bug reports on the respective project repository's GitHub issue tracker. Be sure to search the
+list to see if your issue has already been raised.
 
-We love contributions from our community! If you'd like to go a step beyond contributor
-and become a committer with full write access and a say in the project, you must
-be invited to the project. The existing committers employ an internal nomination
-process that must reach lazy consensus (silence is approval) before invitations
-are issued. If you feel you are qualified and want to get more deeply involved,
-feel free to reach out to existing committers to have a conversation about that.
+A good bug report is one that make it easy for us to understand what you were trying to do and what went wrong.
+Provide as much context as possible so we can try to recreate the issue.
 
-## Security Issues
+### Discussion
 
-Security issues shouldn't be reported on this issue tracker. Instead, [file an issue to our security experts](https://helpx.adobe.com/security/alertus.html)
+Please use the project's developer email list to engage our community:
+[dev@openwhisk.apache.org](dev@openwhisk.apache.org)
+
+In addition, we provide a "dev" Slack team channel for conversations at:
+https://openwhisk-team.slack.com/messages/dev/
+
+### Coding standards
+
+Please ensure you follow the coding standards used throughout the existing
+code base. Some basic rules include:
+
+ - all files must have the Apache license in the header.
+ - all PRs must have passing builds for all operating systems.
