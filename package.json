@@ -3,15 +3,16 @@
     "version": "1.1.2",
     "description": "Debugging and live development tool for Apache OpenWhisk",
     "license": "Apache-2.0",
-    "author": "Adobe Inc.",
-    "repository": "github:adobe/wskdebug",
-    "homepage": "https://github.com/adobe/wskdebug#readme",
-    "bugs": "https://github.com/adobe/wskdebug/issues",
+    "author": "Apache Software Foundation",
+    "repository": "github:apache/openwhisk-wskdebug",
+    "homepage": "https://github.com/apache/openwhisk-wskdebug#readme",
+    "bugs": "https://github.com/apache/openwhisk-wskdebug/issues",
     "keywords": [
         "openwhisk",
         "debug",
         "debugger",
-        "serverless"
+        "serverless",
+        "apache"
     ],
     "main": "index.js",
     "bin": {
