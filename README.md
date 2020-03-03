@@ -1,8 +1,26 @@
+<!--
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+-->
 <!-- disabled badges
 cli: ![](https://img.shields.io/badge/cli-wskdebug-brightgreen)
 github actions: [![Actions Status](https://github.com/apache/openwhisk-wskdebug/workflows/CI/badge.svg)](https://github.com/apache/openwhisk-wskdebug/actions)
 -->
-[![npm version](https://img.shields.io/npm/v/wskdebug)](https://www.npmjs.com/package/wskdebug) [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0) [![codecov](https://codecov.io/gh/apache/openwhisk-wskdebug/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/openwhisk-wskdebug) [![Total alerts](https://img.shields.io/lgtm/alerts/g/apache/openwhisk-wskdebug.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/apache/openwhisk-wskdebug/alerts/)
+[![npm version](https://img.shields.io/npm/v/@openwhisk/wskdebug)](https://www.npmjs.com/package/@openwhisk/wskdebug) [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0) [![codecov](https://codecov.io/gh/apache/openwhisk-wskdebug/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/openwhisk-wskdebug) [![Total alerts](https://img.shields.io/lgtm/alerts/g/apache/openwhisk-wskdebug.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/apache/openwhisk-wskdebug/alerts/)
 
 
 wskdebug
@@ -45,14 +63,14 @@ _On the left [Visual Studio Code](https://code.visualstudio.com) in debug mode. 
 To install or update run:
 
 ```
-npm install -g wskdebug
+npm install -g @openwhisk/wskdebug
 ```
 
 <a name="uninstall"></a>
 ### Uninstall
 
 ```
-npm uninstall -g wskdebug
+npm uninstall -g @openwhisk/wskdebug
 ```
 
 <a name="about"></a>
@@ -70,7 +88,7 @@ Currently, [Node.js actions](https://openwhisk.apache.org/documentation.html#nod
 
 ### Note on timeouts
 
-Web actions or other blocking invocations time out after **1 minute in OpenWhisk**. This limit cannot be configured. This means that if the debugging session (stepping through code) takes longer than 1 minute, any web action will return an error and any blocking invocations will just get the activation id, which most callers of a blocking invocation do not expect. 
+Web actions or other blocking invocations time out after **1 minute in OpenWhisk**. This limit cannot be configured. This means that if the debugging session (stepping through code) takes longer than 1 minute, any web action will return an error and any blocking invocations will just get the activation id, which most callers of a blocking invocation do not expect.
 
 However, there is no time limit on stepping through the code itself if you do not care about the result of the action being handled synchronously.
 
@@ -355,8 +373,17 @@ wskdebug myaction src/action.js \
 ```
 wskdebug <action> [source-path]
 
-Debug an OpenWhisk <action> by forwarding its activations to a local docker container that
-has debugging enabled and its debug port exposed to the host.
+.            ____      ___                   _    _ _     _     _
+.           /\   \    / _ \ _ __   ___ _ __ | |  | | |__ (_)___| | __
+.      /\  /__\   \  | | | | '_ \ / _ \ '_ \| |  | | '_ \| / __| |/ /
+.     /  \____ \  /  | |_| | |_) |  __/ | | | |/\| | | | | \__ \   <
+.     \   \  /  \/    \___/| .__/ \___|_| |_|__/\__|_| |_|_|___/_|\_\
+.      \___\/ tm           |_|
+
+.                              W S K D E B U G
+
+Debug an Apache OpenWhisk <action> by forwarding its activations to a local docker
+container that has debugging enabled and its debug port exposed to the host.
 
 If only <action> is specified, the deployed action code is debugged.
 
@@ -373,11 +400,11 @@ Arguments:
   source-path  Path to local action sources, file or folder (optional)            [string]
 
 Action options:
-  -m, --main         Name of action entry point                                   [string]
-  -k, --kind         Action kind override, needed for blackbox images             [string]
-  -i, --image        Docker image to use as action container                      [string]
-  --on-build         Shell command for custom action build step                   [string]
-  --build-path       Path to built action, result of --on-build command           [string]
+  -m, --main    Name of action entry point                                        [string]
+  -k, --kind    Action kind override, needed for blackbox images                  [string]
+  -i, --image   Docker image to use as action container                           [string]
+  --on-build    Shell command for custom action build step                        [string]
+  --build-path  Path to built action, result of --on-build command                [string]
 
 LiveReload options:
   -l            Enable browser LiveReload on [source-path]                       [boolean]
@@ -405,7 +432,7 @@ Agent options:
   -c, --condition  Hit condition to trigger debugger. Javascript expression evaluated
                    against input parameters. Example: 'debug == 'true'            [string]
   --agent-timeout  Debugging agent timeout (seconds). Default: 5 min              [number]
-  --ngrok          Use ngrok.com for agent forwarding.                           [boolean]
+  --ngrok          Use 3rd party service ngrok.com for agent forwarding.         [boolean]
   --ngrok-region   Ngrok region to use. Defaults to 'us'.                         [string]
 
 Options:
@@ -419,7 +446,7 @@ Options:
 
 ### Cannot install globally
 
-If you get an error during `npm install -g wskdebug` like this:
+If you get an error during `npm install -g @openwhisk/wskdebug` like this:
 
 ```
 ngrok - downloading binary https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-darwin-amd64.zip
@@ -500,7 +527,7 @@ The forwarding works by **replacing the original action with a special agent**. 
 
 The fastest option (concurrency) leverages the NodeJS concurrency feature available in some OpenWhisk installations where a single container instance will receive all activations. It uses queues implemented as global variables of the action so that multiple invocations of this action (agent) can see and wait for each other.
 
-The second fastest option - and fastest in case of an OpenWhisk that does not support concurrency - is using [ngrok](https://ngrok.com) localhost forwarding. It must be manually selected using `--ngrok` on the command line. This works even without an ngrok account.
+The second fastest option - and fastest in case of an OpenWhisk that does not support concurrency - is using the free 3rd party service [ngrok](https://ngrok.com), which supports internet-to-localhost port forwarding. It must be manually selected using `--ngrok` on the command line. This works even without an account on [ngrok.com](https://ngrok.com). _Please note that ngrok.com is not affiliated with Apache OpenWhisk and use is completely optional and up to the user._
 
 Lastly, there is the "activation DB" agent which simply stores the activation input and result as separate activations (using helper actions named `*_wskdebug_invoked` and `*_wskdebug_completed`) and polls them via `wsk activation list`, both from wskdebug (for new activations) and in the agent itself (waiting for results).
 

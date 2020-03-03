@@ -29,11 +29,11 @@ const assert = require('assert');
 const stripAnsi = require('strip-ansi');
 const {execSync} = require('child_process');
 
-describe('cli', function() {
+describe('wskdebug cli', function() {
 
-    it("should print version (via cli.js)", async function() {
+    it("should print version (via wskdebug.js)", async function() {
         this.timeout(5000);
-        const stdout = execSync("node cli.js --version").toString();
+        const stdout = execSync("node wskdebug.js --version").toString();
         assert.equal(stripAnsi(stdout.trim()), require(`${process.cwd()}/package.json`).version);
     });
 
@@ -46,7 +46,7 @@ describe('cli', function() {
 
         assert.equal(stdio.stderr, "");
         // testing a couple strings that should rarely change
-        assert(stdio.stdout.includes("Debug an OpenWhisk <action> by forwarding its activations to a local docker container"));
+        assert(stdio.stdout.includes("Debug an Apache OpenWhisk <action> by forwarding its activations to a local docker"));
         assert(stdio.stdout.includes("Supported kinds:"));
         assert(stdio.stdout.includes("Arguments:"));
         assert(stdio.stdout.includes("Action options:"));
