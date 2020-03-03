@@ -184,7 +184,7 @@ function yargsOptions(yargs) {
     yargs.option("ngrok", {
         type: "boolean",
         group: "Agent options:",
-        describe: "Use ngrok.com for agent forwarding."
+        describe: "Use 3rd party service ngrok.com for agent forwarding."
     });
     yargs.option("ngrok-region", {
         type: "string",
