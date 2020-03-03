@@ -355,8 +355,17 @@ wskdebug myaction src/action.js \
 ```
 wskdebug <action> [source-path]
 
-Debug an OpenWhisk <action> by forwarding its activations to a local docker container that
-has debugging enabled and its debug port exposed to the host.
+.            ____      ___                   _    _ _     _     _
+.           /\   \    / _ \ _ __   ___ _ __ | |  | | |__ (_)___| | __
+.      /\  /__\   \  | | | | '_ \ / _ \ '_ \| |  | | '_ \| / __| |/ /
+.     /  \____ \  /  | |_| | |_) |  __/ | | | |/\| | | | | \__ \   <
+.     \   \  /  \/    \___/| .__/ \___|_| |_|__/\__|_| |_|_|___/_|\_\
+.      \___\/ tm           |_|
+
+.                              W S K D E B U G
+
+Debug an Apache OpenWhisk <action> by forwarding its activations to a local docker
+container that has debugging enabled and its debug port exposed to the host.
 
 If only <action> is specified, the deployed action code is debugged.
 
@@ -373,11 +382,11 @@ Arguments:
   source-path  Path to local action sources, file or folder (optional)            [string]
 
 Action options:
-  -m, --main         Name of action entry point                                   [string]
-  -k, --kind         Action kind override, needed for blackbox images             [string]
-  -i, --image        Docker image to use as action container                      [string]
-  --on-build         Shell command for custom action build step                   [string]
-  --build-path       Path to built action, result of --on-build command           [string]
+  -m, --main    Name of action entry point                                        [string]
+  -k, --kind    Action kind override, needed for blackbox images                  [string]
+  -i, --image   Docker image to use as action container                           [string]
+  --on-build    Shell command for custom action build step                        [string]
+  --build-path  Path to built action, result of --on-build command                [string]
 
 LiveReload options:
   -l            Enable browser LiveReload on [source-path]                       [boolean]

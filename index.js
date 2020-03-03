@@ -220,8 +220,18 @@ function getYargsParser() {
         .wrap(90)
         .command(
             "* <action> [source-path]",
-            `Debug an OpenWhisk <action> by forwarding its activations to a local docker container that
-            has debugging enabled and its debug port exposed to the host.
+            // eslint-disable-next-line indent
+           `.            ____      ___                   _    _ _     _     _
+            .           /\\   \\    / _ \\ _ __   ___ _ __ | |  | | |__ (_)___| | __
+            .      /\\  /__\\   \\  | | | | '_ \\ / _ \\ '_ \\| |  | | '_ \\| / __| |/ /
+            .     /  \\____ \\  /  | |_| | |_) |  __/ | | | |/\\| | | | | \\__ \\   <
+            .     \\   \\  /  \\/    \\___/| .__/ \\___|_| |_|__/\\__|_| |_|_|___/_|\\_\\
+            .      \\___\\/ tm           |_|
+
+            .                              W S K D E B U G
+
+            Debug an Apache OpenWhisk <action> by forwarding its activations to a local docker
+            container that has debugging enabled and its debug port exposed to the host.
 
             If only <action> is specified, the deployed action code is debugged.
 
