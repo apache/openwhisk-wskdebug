@@ -1,3 +1,21 @@
+<!--
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+-->
 <!-- disabled badges
 cli: ![](https://img.shields.io/badge/cli-wskdebug-brightgreen)
 github actions: [![Actions Status](https://github.com/apache/openwhisk-wskdebug/workflows/CI/badge.svg)](https://github.com/apache/openwhisk-wskdebug/actions)
@@ -70,7 +88,7 @@ Currently, [Node.js actions](https://openwhisk.apache.org/documentation.html#nod
 
 ### Note on timeouts
 
-Web actions or other blocking invocations time out after **1 minute in OpenWhisk**. This limit cannot be configured. This means that if the debugging session (stepping through code) takes longer than 1 minute, any web action will return an error and any blocking invocations will just get the activation id, which most callers of a blocking invocation do not expect. 
+Web actions or other blocking invocations time out after **1 minute in OpenWhisk**. This limit cannot be configured. This means that if the debugging session (stepping through code) takes longer than 1 minute, any web action will return an error and any blocking invocations will just get the activation id, which most callers of a blocking invocation do not expect.
 
 However, there is no time limit on stepping through the code itself if you do not care about the result of the action being handled synchronously.
 
