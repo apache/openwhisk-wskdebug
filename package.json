@@ -16,7 +16,7 @@
     ],
     "main": "index.js",
     "bin": {
-        "wskdebug": "./cli.js"
+        "wskdebug": "./wskdebug.js"
     },
     "scripts": {
         "test": "nyc mocha test/**/*.test.js",

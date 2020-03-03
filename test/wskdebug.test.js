@@ -29,11 +29,11 @@ const assert = require('assert');
 const stripAnsi = require('strip-ansi');
 const {execSync} = require('child_process');
 
-describe('cli', function() {
+describe('wskdebug cli', function() {
 
-    it("should print version (via cli.js)", async function() {
+    it("should print version (via wskdebug.js)", async function() {
         this.timeout(5000);
-        const stdout = execSync("node cli.js --version").toString();
+        const stdout = execSync("node wskdebug.js --version").toString();
         assert.equal(stripAnsi(stdout.trim()), require(`${process.cwd()}/package.json`).version);
     });
 
