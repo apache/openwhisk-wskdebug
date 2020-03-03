@@ -14,7 +14,9 @@ CODE_OF_CONDUCT.md
 .github/
 build/
 test/
+.asf.yaml
 .circleci/
+.travis.yml
 .webpack
 
 codecov.yml
@@ -22,3 +24,4 @@ coverage.lcov
 .nyc_output/
 coverage/
 test-results/
+travis/
