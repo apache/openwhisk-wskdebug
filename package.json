@@ -47,7 +47,7 @@
         "manakin": "^0.5.2",
         "ngrok": "^3.2.5",
         "openwhisk": "^3.19.0",
-        "yargs": "^13.2.4"
+        "yargs": "^15.1.0"
     },
     "devDependencies": {
         "clone": "^2.1.2",
