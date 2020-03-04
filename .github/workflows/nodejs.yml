@@ -12,7 +12,7 @@ jobs:
         node_version: [8.x, 10.x, 12.x, 13.x]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node_version }}
@@ -21,3 +21,14 @@ jobs:
     #- run: npm run report-coverage
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  scancode:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/checkout@v2
+      with:
+        repository: apache/openwhisk-utilities
+        path: openwhisk-utilities
+    - uses: actions/setup-python@v1
+    - run: openwhisk-utilities/scancode/scanCode.py --gitignore .gitignore --config openwhisk-utilities/scancode/ASF-Release.cfg .
