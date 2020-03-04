@@ -269,6 +269,7 @@ class OpenWhiskInvoker {
             };
         }
 
+        console.log("pushing to /init")
         const response = await fetch(`${this.url()}/init`, {
             method: "POST",
             headers: {
@@ -281,6 +282,7 @@ class OpenWhiskInvoker {
             retryDelay: INIT_RETRY_DELAY_MS
         });
 
+        console.log("/init finished")
         if (response.status === 502) {
             const body = await response.json();
             throw new Error("Could not initialize action code on local debug container:\n\n" + body.error);

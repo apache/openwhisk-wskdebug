@@ -28,6 +28,7 @@ const ngrok = require('ngrok');
 const url = require('url');
 const util = require('util');
 const crypto = require("crypto");
+const ora = require('ora');
 
 async function sleep(millis) {
     return new Promise(resolve => setTimeout(resolve, millis));
@@ -49,6 +50,7 @@ class Debugger {
         if (argv.ignoreCerts) {
             this.wskProps.ignore_certs = true;
         }
+        this.spinner = ora({color: "blue"});
     }
 
     async start() {
@@ -57,7 +59,9 @@ class Debugger {
         // quick fail for missing requirements such as docker not running
         await OpenWhiskInvoker.checkIfAvailable();
 
-        console.info(`Starting debugger for /${this.wskProps.namespace}/${this.action}`);
+        console.info(`Debugging /${this.wskProps.namespace}/${this.action}`);
+
+        this.spinner.start(`Inspecting action...`);
 
         // get the action
         const { action, agentAlreadyInstalled } = await this.getAction(this.action);
@@ -68,12 +72,19 @@ class Debugger {
         try {
             // run build initially (would be required by starting container)
             if (this.argv.onBuild) {
+                this.spinner.stop();
                 console.info("=> Build:", this.argv.onBuild);
                 spawnSync(this.argv.onBuild, {shell: true, stdio: "inherit"});
             }
 
+            // this.spinner.stop();
+            this.spinner.start('Starting local container...');
+
             // start container - get it up fast for VSCode to connect within its 10 seconds timeout
             await this.invoker.startContainer();
+
+            // this.spinner.succeed();
+            this.spinner.start('Installing action on container...');
 
             // get code and /init local container
             if (this.argv.verbose) {
@@ -84,6 +95,8 @@ class Debugger {
             await this.invoker.init(actionWithCode);
 
             // setup agent in openwhisk
+            // this.spinner.succeed();
+            this.spinner.start('Installing remote agent...');
 
             // user can switch between agents (ngrok or not), hence we need to restore
             // (better would be to track the agent + its version and avoid a restore, but that's TBD)
@@ -92,6 +105,9 @@ class Debugger {
             }
 
             await this.installAgent(this.action, action);
+
+            // this.spinner.succeed();
+            this.spinner.stop();
 
             if (this.argv.onStart) {
                 console.log("On start:", this.argv.onStart);
@@ -102,15 +118,20 @@ class Debugger {
             await this.startSourceWatching();
 
             console.log();
-            console.info(`Action     : ${this.action}`);
+            console.info(`Action     : /${this.wskProps.namespace}/${this.action}`);
             this.invoker.logInfo();
             if (this.argv.condition) {
                 console.info(`Condition  : ${this.argv.condition}`);
             }
             console.log();
-            console.info(`Ready, waiting for activations! Use CTRL+C to exit`);
+            this.spinner.stopAndPersist({
+                symbol: "⭐️",
+                text: ` Ready, waiting for activations! Use CTRL+C to exit`
+            });
+            // console.info(`Ready, waiting for activations! Use CTRL+C to exit`);
 
             this.ready = true;
+            this.spinner.stop();
 
         } catch (e) {
             await this.shutdown();
@@ -187,17 +208,21 @@ class Debugger {
         if (this.ready) {
             console.log();
             console.log();
-            console.log("Shutting down...");
+            this.spinner.start('Shutting down...');
+            // console.log("Shutting down...");
         }
 
         // need to shutdown everything even if some fail, hence tryCatch() for each
 
         if (this.action) {
+            this.spinner.start('Removing agent and restoring action...');
             await this.tryCatch(this.restoreAction(this.action));
         }
+        this.spinner.start('Shutting down local container...');
         await this.tryCatch(this.invoker.stop());
 
         if (this.liveReloadServer) {
+            this.spinner.start('Shutting down live reload...');
             await this.tryCatch(() => {
                 if (this.liveReloadServer.server) {
                     this.liveReloadServer.close();
@@ -209,6 +234,7 @@ class Debugger {
         }
 
         if (this.ngrokServer) {
+            this.spinner.start('Shutting down ngrok...');
             await this.tryCatch(() => {
                 this.ngrokServer.close();
                 this.ngrokServer = null;
@@ -218,7 +244,8 @@ class Debugger {
 
         // only log this if we started properly
         if (this.ready) {
-            console.log(`Done`);
+            this.spinner.succeed("Finished.");
+            // console.log(`Done`);
         }
         this.ready = false;
     }
