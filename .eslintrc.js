@@ -65,6 +65,8 @@ module.exports = {
         "mocha/no-sibling-hooks": "error",
         "mocha/no-async-describe": "error",
         "indent": ["error", 4],
-        "keyword-spacing": [2]
+        "keyword-spacing": [2],
+
+        "no-unused-vars": ["error", { "caughtErrors": "none" } ]
     }
 };
