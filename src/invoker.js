@@ -18,7 +18,7 @@
 'use strict';
 
 const { spawn, execSync } = require('child_process');
-const fetch = require('fetch-retry');
+const fetch = require('fetch-retry')(require('isomorphic-fetch'));
 const kinds = require('./kinds/kinds');
 const path = require('path');
 
