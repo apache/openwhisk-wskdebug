@@ -20,7 +20,11 @@
 cli: ![](https://img.shields.io/badge/cli-wskdebug-brightgreen)
 github actions: [![Actions Status](https://github.com/apache/openwhisk-wskdebug/workflows/CI/badge.svg)](https://github.com/apache/openwhisk-wskdebug/actions)
 -->
-[![npm version](https://img.shields.io/npm/v/@openwhisk/wskdebug)](https://www.npmjs.com/package/@openwhisk/wskdebug) [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0) [![codecov](https://codecov.io/gh/apache/openwhisk-wskdebug/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/openwhisk-wskdebug) [![Total alerts](https://img.shields.io/lgtm/alerts/g/apache/openwhisk-wskdebug.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/apache/openwhisk-wskdebug/alerts/)
+[![npm version](https://img.shields.io/npm/v/@openwhisk/wskdebug)](https://www.npmjs.com/package/@openwhisk/wskdebug)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
+[![Travis](https://travis-ci.com/apache/openwhisk-wskdebug.svg?branch=master)](https://travis-ci.com/apache/openwhisk-wskdebug)
+[![codecov](https://codecov.io/gh/apache/openwhisk-wskdebug/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/openwhisk-wskdebug)
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/apache/openwhisk-wskdebug.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/apache/openwhisk-wskdebug/alerts/)
 
 
 wskdebug

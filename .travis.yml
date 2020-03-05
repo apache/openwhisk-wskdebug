@@ -17,7 +17,9 @@
 
 language: node_js
 node_js:
+  - 8
   - 10
+  - 12
 services:
   - docker
 
@@ -26,10 +28,10 @@ notifications:
   webhooks:
     urls:
       # travis2slack webhook to enable DMs on openwhisk-team.slack.com to PR authors with TravisCI results
-      # secure: FIXME -- TODO
+      # secure: FIXME: TODO
 
 before_install:
   - ./travis/scancode.sh
 
-before_script:
-  - ./travis/setup.sh
+script:
+  - npm test -- -v
