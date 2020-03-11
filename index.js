@@ -214,7 +214,10 @@ function getYargsParser() {
         .alias("h", "help")
         .updateStrings({
             'Positionals:': 'Arguments:',
-            'Not enough non-option arguments: got %s, need at least %s': "Error: Missing argument <action> (%s/%s)"
+            'Not enough non-option arguments: got %s, need at least %s': {
+                "one": "Error: Missing argument <action> (%s/%s)",
+                "other": "Error: Missing argument <action> (%s/%s)"
+            }
         })
         .version(false)
         .wrap(90)
