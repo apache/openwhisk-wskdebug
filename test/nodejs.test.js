@@ -31,6 +31,10 @@ const Debugger = require("../src/debugger");
 const test = require('./test');
 const assert = require('assert');
 const fse = require('fs-extra');
+const fs = require('fs');
+const os = require("os");
+const path = require("path");
+const sleep = require('util').promisify(setTimeout);
 
 describe('nodejs', function() {
     this.timeout(30000);
@@ -188,8 +192,6 @@ describe('nodejs', function() {
         fse.removeSync("build");
         test.assertAllNocksInvoked();
     });
-
-
 
     it("should mount and run local sources with a comment on the last line", async function() {
         test.mockActionAndInvocation(
@@ -414,6 +416,120 @@ describe('nodejs', function() {
         fse.removeSync("build");
         assert.ok(invokedAction, "action was not invoked on source change");
         assert.ok(completedAction, "action invocation was not handled and completed");
+        test.assertAllNocksInvoked();
+    });
+
+    it("should reload local plain sources on file modification", async function() {
+        this.timeout(10000);
+
+        // create copy in temp dir so we can modify it
+        const tmpDir = path.join(os.tmpdir(), fs.mkdtempSync("wskdebug-test-"));
+        fse.copySync("test/nodejs/plain-flat", tmpDir);
+        process.chdir(tmpDir);
+
+        test.mockActionDoubleInvocation(
+            "myaction",
+            // should not use this code if we specify local sources which return CORRECT
+            `const main = () => ({ msg: 'WRONG' });`,
+            {},
+            { msg: "CORRECT" },
+            async () => {
+                // change action.js to test reloading
+                console.log("simulating modifiying action.js...");
+
+                fs.writeFileSync(`action.js`,
+                    `
+                    'use strict';
+
+                    function main(params) {
+                        return { msg: "SECOND" };
+                    }
+                `);
+
+                await sleep(1);
+            },
+            { msg: "SECOND" },
+            true // binary
+        );
+
+        await wskdebug(`myaction action.js -p ${test.port}`);
+
+        test.assertAllNocksInvoked();
+    });
+
+    it("should reload local commonjs sources on file modification", async function() {
+        this.timeout(10000);
+
+        // create copy in temp dir so we can modify it
+        const tmpDir = path.join(os.tmpdir(), fs.mkdtempSync("wskdebug-test-"));
+        fse.copySync("test/nodejs/commonjs-flat", tmpDir);
+        process.chdir(tmpDir);
+
+        test.mockActionDoubleInvocation(
+            "myaction",
+            // should not use this code if we specify local sources which return CORRECT
+            `const main = () => ({ msg: 'WRONG' });`,
+            {},
+            { msg: "CORRECT/RESULT" },
+            async () => {
+                // change action.js to test reloading
+                console.log("simulating modifiying action.js...");
+
+                fs.writeFileSync(`action.js`,
+                    `
+                    'use strict';
+
+                    exports.main = function() {
+                        return { msg: "SECOND" };
+                    }
+                `);
+
+                await sleep(1);
+            },
+            { msg: "SECOND" },
+            true // binary
+        );
+
+        await wskdebug(`myaction action.js -p ${test.port}`);
+
+        test.assertAllNocksInvoked();
+    });
+
+    it("should reload local commonjs sources with a require() dependency on file modification", async function() {
+        this.timeout(10000);
+
+        // create copy in temp dir so we can modify it
+        const tmpDir = path.join(os.tmpdir(), fs.mkdtempSync("wskdebug-test-"));
+        fse.copySync("test/nodejs/commonjs-deps", tmpDir);
+        process.chdir(tmpDir);
+
+        test.mockActionDoubleInvocation(
+            "myaction",
+            // should not use this code if we specify local sources which return CORRECT
+            `const main = () => ({ msg: 'WRONG' });`,
+            {},
+            { msg: "FIRST" },
+            async () => {
+                // change dependency.js to test reloading of require() deps
+                console.log("simulating modifiying depdency.js...");
+
+                fs.writeFileSync(`dependency.js`,
+                    `
+                    'use strict';
+
+                    module.exports = {
+                        msg: "SECOND"
+                    }
+                `);
+
+                await sleep(1);
+            },
+            { msg: "SECOND" },
+            true // binary
+        );
+
+        await wskdebug(`myaction action.js -p ${test.port}`);
+
         test.assertAllNocksInvoked();
     });
 
