@@ -221,6 +221,81 @@ function mockActionAndInvocation(action, code, params, expectedResult, binary=fa
     expectAgentInvocation(action, params, expectedResult);
 }
 
+function mockActionDoubleInvocation(action, code, params, result1, runBetween, result2, binary=false) {
+    params = params || {};
+    const activationId = Date.now();
+    result1.$activationId = activationId;
+
+    mockAction(action, code, binary);
+    expectAgent(action, code, binary);
+
+    // 1st activation
+    nockActivation(action, body => body.$waitForActivation === true)
+        .reply(200, {
+            response: {
+                result: Object.assign(params, { $activationId: activationId })
+            }
+        });
+
+    // wskdebug sending result back to agent
+    nockActivation(
+        action,
+        body => {
+            assert.deepStrictEqual(body, result1);
+            return true;
+        }
+    ).reply(200, {
+        response: {
+            result: {
+                message: "Completed"
+            }
+        }
+    });
+
+    // 2nd activation
+    const activationId2 = Date.now() + "-second";
+    result2.$activationId = activationId2;
+
+    nockActivation(action, body => body.$waitForActivation === true)
+        .reply(200, () => {
+            runBetween();
+            return {
+                response: {
+                    result: Object.assign(params, { $activationId: activationId2 })
+                }
+            }
+        });
+
+    // wskdebug sending 2nd result back to agent
+    nockActivation(
+        action,
+        body => {
+            assert.deepStrictEqual(body, result2);
+            return true;
+        }
+    ).reply(200, {
+        response: {
+            result: {
+                message: "Completed"
+            }
+        }
+    });
+
+    // graceful shutdown for wskdebug to end test
+    nockActivation(action, body => body.$waitForActivation === true)
+        .reply(502, {
+            response: {
+                success: false,
+                result: {
+                    error: {
+                        error: "Please exit, thanks.",
+                        code: 43 // graceful exit
+                    }
+                }
+            }
+        });
+}
+
 // --------------------------------------------< internal >---------------
 
 function nodejsActionDescription(name, binary=false) {
@@ -410,6 +485,7 @@ module.exports = {
     assertAllNocksInvoked,
     // mock
     mockActionAndInvocation,
+    mockActionDoubleInvocation,
     // advanced
     mockAction,
     expectAgent,

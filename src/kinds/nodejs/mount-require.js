@@ -36,10 +36,16 @@ if (typeof require(path)[mainFn] !== "function") {
     throw `'${mainFn}' is not a function in '${sourceFile}'. Specify the right function in wskdebug using --main.`;
 }
 
+function clearEntireRequireCache() {
+    Object.keys(require.cache).forEach(function(key) {
+        delete require.cache[key];
+    });
+}
+
 // eslint-disable-next-line no-unused-vars
 function main(args) { // lgtm [js/unused-local-variable]
-    // force reload of mounted action on every invocation
-    delete require.cache[require.resolve(path)];
+    // force reload of entire mounted action on every invocation
+    clearEntireRequireCache();
 
     // require and invoke main function
     return require(path)[mainFn](args);
