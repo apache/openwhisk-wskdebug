@@ -32,9 +32,15 @@ const test = require('./test');
 const assert = require('assert');
 const fse = require('fs-extra');
 const fs = require('fs');
-const os = require("os");
-const path = require("path");
 const sleep = require('util').promisify(setTimeout);
+const tmp = require('tmp');
+
+function makeTempDir() {
+    tmp.setGracefulCleanup();
+    const tmpobj = tmp.dirSync({ unsafeCleanup: true });
+    console.log('temp dir: ', tmpobj.name);
+    return tmpobj.name;
+}
 
 describe('nodejs', function() {
     this.timeout(30000);
@@ -423,7 +429,7 @@ describe('nodejs', function() {
         this.timeout(10000);
 
         // create copy in temp dir so we can modify it
-        const tmpDir = path.join(os.tmpdir(), fs.mkdtempSync("wskdebug-test-"));
+        const tmpDir = makeTempDir();
         fse.copySync("test/nodejs/plain-flat", tmpDir);
         process.chdir(tmpDir);
 
@@ -461,7 +467,7 @@ describe('nodejs', function() {
         this.timeout(10000);
 
         // create copy in temp dir so we can modify it
-        const tmpDir = path.join(os.tmpdir(), fs.mkdtempSync("wskdebug-test-"));
+        const tmpDir = makeTempDir();
         fse.copySync("test/nodejs/commonjs-flat", tmpDir);
         process.chdir(tmpDir);
 
@@ -499,7 +505,7 @@ describe('nodejs', function() {
         this.timeout(10000);
 
         // create copy in temp dir so we can modify it
-        const tmpDir = path.join(os.tmpdir(), fs.mkdtempSync("wskdebug-test-"));
+        const tmpDir = makeTempDir();
         fse.copySync("test/nodejs/commonjs-deps", tmpDir);
         process.chdir(tmpDir);
 
