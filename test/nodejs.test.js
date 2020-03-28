@@ -35,10 +35,15 @@ const fs = require('fs');
 const sleep = require('util').promisify(setTimeout);
 const tmp = require('tmp');
 
+const BUILD_DIR = "build";
+
 function makeTempDir() {
     tmp.setGracefulCleanup();
-    const tmpobj = tmp.dirSync({ unsafeCleanup: true });
-    console.log('temp dir: ', tmpobj.name);
+    fse.ensureDirSync(BUILD_DIR)
+    const tmpobj = tmp.dirSync({
+        dir: BUILD_DIR,
+        unsafeCleanup: true
+    });
     return tmpobj.name;
 }
 
