@@ -34,6 +34,7 @@ const fse = require('fs-extra');
 const fs = require('fs');
 const sleep = require('util').promisify(setTimeout);
 const tmp = require('tmp');
+const chmodr = require('chmodr');
 
 const BUILD_DIR = "build";
 
@@ -436,6 +437,7 @@ describe('nodejs', function() {
         // create copy in temp dir so we can modify it
         const tmpDir = makeTempDir();
         fse.copySync("test/nodejs/plain-flat", tmpDir);
+        chmodr.sync(tmpDir, 0o755);
         process.chdir(tmpDir);
 
         test.mockActionDoubleInvocation(
@@ -474,6 +476,7 @@ describe('nodejs', function() {
         // create copy in temp dir so we can modify it
         const tmpDir = makeTempDir();
         fse.copySync("test/nodejs/commonjs-flat", tmpDir);
+        chmodr.sync(tmpDir, 0o755);
         process.chdir(tmpDir);
 
         test.mockActionDoubleInvocation(
@@ -512,6 +515,7 @@ describe('nodejs', function() {
         // create copy in temp dir so we can modify it
         const tmpDir = makeTempDir();
         fse.copySync("test/nodejs/commonjs-deps", tmpDir);
+        chmodr.sync(tmpDir, 0o755);
         process.chdir(tmpDir);
 
         test.mockActionDoubleInvocation(

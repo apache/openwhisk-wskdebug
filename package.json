@@ -51,6 +51,7 @@
         "yargs": "^15.1.0"
     },
     "devDependencies": {
+        "chmodr": "^1.2.0",
         "clone": "^2.1.2",
         "codecov": "^3.6.5",
         "eslint": "^6.8.0",
