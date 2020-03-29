@@ -48,7 +48,7 @@
         "manakin": "^0.5.2",
         "ngrok": "^3.2.7",
         "openwhisk": "^3.21.1",
-        "yargs": "^15.1.0"
+        "yargs": "^15.3.1"
     },
     "devDependencies": {
         "chmodr": "^1.2.0",
