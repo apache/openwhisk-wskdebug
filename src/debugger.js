@@ -161,7 +161,9 @@ class Debugger {
 
     async stop() {
         this.running = false;
-        this.agentMgr.stop();
+        if (this.agentMgr) {
+            this.agentMgr.stop();
+        }
 
         if (this.runPromise) {
             // wait for the main loop to gracefully end, which will call shutdown()
@@ -174,7 +176,9 @@ class Debugger {
 
     async kill() {
         this.running = false;
-        this.agentMgr.stop();
+        if (this.agentMgr) {
+            this.agentMgr.stop();
+        }
 
         await this.shutdown();
     }
@@ -189,9 +193,15 @@ class Debugger {
 
         // need to shutdown everything even if some fail, hence tryCatch() for each
 
-        await this.tryCatch(this.agentMgr.shutdown());
-        await this.tryCatch(this.invoker.stop());
-        await this.tryCatch(this.watcher.stop());
+        if (this.agentMgr) {
+            await this.tryCatch(this.agentMgr.shutdown());
+        }
+        if (this.invoker) {
+            await this.tryCatch(this.invoker.stop());
+        }
+        if (this.watcher) {
+            await this.tryCatch(this.watcher.stop());
+        }
 
         // only log this if we started properly
         if (this.ready) {
