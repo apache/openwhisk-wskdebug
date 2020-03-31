@@ -116,6 +116,7 @@ class Debugger {
     async _run() {
         try {
             this.running = true;
+            this.shuttingDown = false;
 
             // main blocking loop
             // abort if this.running is set to false
@@ -132,7 +133,6 @@ class Debugger {
                     // wait for activation, run it, complete, repeat
                     const activation = await this.agentMgr.waitForActivations();
                     if (!activation) {
-                        // this.running = false;
                         return;
                     }
 
@@ -149,7 +149,6 @@ class Debugger {
 
                     // pass on the local result to the agent in openwhisk
                     if (!await this.agentMgr.completeActivation(id, result, duration)) {
-                        // this.running = false;
                         return;
                     }
                 }
@@ -159,6 +158,7 @@ class Debugger {
         }
     }
 
+    // normal graceful stop() initiated by a client
     async stop() {
         this.running = false;
         if (this.agentMgr) {
@@ -174,6 +174,7 @@ class Debugger {
         }
     }
 
+    // fastest way to end, triggered by CTRL+C
     async kill() {
         this.running = false;
         if (this.agentMgr) {
@@ -184,6 +185,12 @@ class Debugger {
     }
 
     async shutdown() {
+        // avoid duplicate shutdown on CTRL+C
+        if (this.shuttingDown) {
+            return;
+        }
+        this.shuttingDown = true;
+
         // only log this if we started properly
         if (this.ready) {
             console.log();
