@@ -74,6 +74,11 @@ function openwhiskNock() {
     return openwhisk;
 }
 
+function openwhiskApiUrl() {
+    return `/api/v1/namespaces/${FAKE_OPENWHISK_NAMESPACE}`;
+}
+
+
 function openwhiskApiUrlActions() {
     return `/api/v1/namespaces/${FAKE_OPENWHISK_NAMESPACE}/actions`;
 }
@@ -522,6 +527,7 @@ module.exports = {
     mockActionDoubleInvocation,
     // advanced
     openwhiskNock,
+    openwhiskApiUrl,
     openwhiskApiUrlActions,
     openwhiskApiAuthHeader,
     mockAction,
