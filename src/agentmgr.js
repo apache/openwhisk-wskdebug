@@ -17,7 +17,7 @@
 
 'use strict';
 
-const NgrokAgent = require('./ngrok');
+const NgrokAgent = require('./agents/ngrok');
 const fs = require('fs-extra');
 const sleep = require('util').promisify(setTimeout);
 
