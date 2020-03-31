@@ -78,6 +78,7 @@ function openwhiskApiUrl() {
     return `/api/v1/namespaces/${FAKE_OPENWHISK_NAMESPACE}`;
 }
 
+
 function openwhiskApiUrlActions() {
     return `/api/v1/namespaces/${FAKE_OPENWHISK_NAMESPACE}/actions`;
 }
