@@ -82,7 +82,7 @@ class Debugger {
                 await this.agentMgr.restoreAction();
             }
 
-            await this.agentMgr.installAgent(action);
+            await this.agentMgr.installAgent(action, this.invoker);
 
             if (this.argv.onStart) {
                 console.log("On start:", this.argv.onStart);

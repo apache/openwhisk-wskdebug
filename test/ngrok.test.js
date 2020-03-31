@@ -126,19 +126,18 @@ describe('ngrok',  function() {
 
     it("should handle action invocation using ngrok", async function() {
         const actionName = "myaction";
-
-        // port of the local server started by wskdebug to be expecting calls from ngrok
-        // which we will do in this test
-        let ngrokServerPort;
-        mockNgrokLibrary(function(opts) {
-            ngrokServerPort = opts.addr;
-            return "https://UNIT_TEST.ngrok.io";
-        });
-
         // should not use this code if we specify local sources which return CORRECT
         const code = `const main = () => ({ msg: 'WRONG' });`;
 
-        let ngrokAuth;
+        // port of the local server started by wskdebug to be expecting calls from ngrok
+        // which we will do in this test
+        let ngrokServerPort, ngrokKillInvoked, ngrokAuth;
+        mockNgrokLibrary(function(opts) {
+            ngrokServerPort = opts.addr;
+            return "https://UNIT_TEST.ngrok.io";
+        }, function() {
+            ngrokKillInvoked = true;
+        });
 
         test.mockAction(actionName, code);
         test.mockCreateBackupAction(actionName);
@@ -156,8 +155,11 @@ describe('ngrok',  function() {
             .matchHeader("authorization", test.openwhiskApiAuthHeader())
             .reply(200, test.nodejsActionDescription(actionName));
 
+        test.mockReadBackupAction(actionName);
+        test.mockRestoreAction(actionName);
+        test.mockRemoveBackupAction(actionName);
 
-        // wskdebug myaction --ngrok -p ${test.port}
+        // wskdebug myaction action.js --ngrok -p ${test.port}
         const argv = {
             port: test.port,
             action: actionName,
@@ -174,7 +176,7 @@ describe('ngrok',  function() {
         await test.sleep(10);
 
         try {
-
+            // simulate invocation coming in via ngrok forwarding
             const response = await fetch(`http://127.0.0.1:${ngrokServerPort}`, {
                 method: "POST",
                 headers: {
@@ -185,6 +187,7 @@ describe('ngrok',  function() {
                 })
             });
 
+            // ensure correct result
             assert.strictEqual(response.status, 200);
             const result = await response.json();
             assert.strictEqual(result.msg, "CORRECT");
@@ -193,6 +196,7 @@ describe('ngrok',  function() {
             await dbgr.stop();
         }
 
+        assert(ngrokKillInvoked);
         assert(nock.isDone(), "Expected these HTTP requests: " + nock.pendingMocks().join());
     });
 });
