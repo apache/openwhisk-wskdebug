@@ -133,7 +133,7 @@ class AgentMgr {
         return {action, agentAlreadyInstalled };
     }
 
-    async installAgent(action) {
+    async installAgent(action, invoker) {
         this.agentInstalled = true;
 
         let agentName;
@@ -143,7 +143,7 @@ class AgentMgr {
         if (this.argv.ngrok) {
             // user manually requested ngrok
 
-            this.ngrokAgent = new NgrokAgent(this.argv);
+            this.ngrokAgent = new NgrokAgent(this.argv, invoker);
 
             // agent using ngrok for forwarding
             agentName = "ngrok";

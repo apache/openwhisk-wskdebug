@@ -25,8 +25,9 @@ const util = require('util');
 const crypto = require("crypto");
 
 class NgrokAgent {
-    constructor(argv) {
+    constructor(argv, invoker) {
         this.argv = argv;
+        this.invoker = invoker;
     }
 
     async getAgent(action) {
