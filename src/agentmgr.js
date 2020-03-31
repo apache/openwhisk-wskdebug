@@ -72,8 +72,6 @@ async function deleteActionIfExists(wsk, name) {
 }
 
 
-// TODO: test wskdebug manually
-// TODO: openwhiskSupports() into separate shared class
 class AgentMgr {
 
     constructor(argv, wsk, actionName) {
