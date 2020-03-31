@@ -158,7 +158,7 @@ class AgentMgr {
                 console.log("This OpenWhisk does not support action concurrency. Debugging will be a bit slower. Consider using '--ngrok' which might be a faster option.");
 
                 agentName = "polling activation db";
-                agentCode = await this.getPollingActivationRecordAgent();
+                agentCode = await this.getPollingActivationDbAgent();
             }
         }
 
@@ -185,7 +185,17 @@ class AgentMgr {
             });
         }
 
-        await this.pushAgent(action, agentCode, backupName);
+        try {
+            await this.pushAgent(action, agentCode, backupName);
+        } catch (e) {
+            // openwhisk does not support concurrent nodejs actions, try with another
+            if (e.statusCode === 400 && e.error && typeof e.error.error === "string" && e.error.error.includes("concurrency")) {
+                console.log(`The Openwhisk server does not support concurrent actions, using alternative agent. Consider using --ngrok for a possibly faster agent.`);
+                this.concurrency = false;
+                agentCode = await this.getPollingActivationDbAgent();
+                await this.pushAgent(action, agentCode, backupName);
+            }
+        }
 
         if (this.argv.verbose) {
             console.log(`Agent installed.`);
@@ -259,6 +269,11 @@ class AgentMgr {
                             const a = activations[0];
                             if (a.response && a.response.result && !this.activationsSeen[a.activationId]) {
                                 activation = a;
+                                if (!activation.response.success) {
+                                    throw {
+                                        error: activation
+                                    };
+                                }
                                 break;
                             }
                         }
@@ -389,7 +404,7 @@ class AgentMgr {
         return fs.readFileSync(`${__dirname}/../agent/agent-concurrency.js`, {encoding: 'utf8'});
     }
 
-    async getPollingActivationRecordAgent() {
+    async getPollingActivationDbAgent() {
         // this needs 2 helper actions in addition to the agent in place of the action
         await this.createHelperAction(`${this.actionName}_wskdebug_invoked`,   `${__dirname}/../agent/echo.js`);
         await this.createHelperAction(`${this.actionName}_wskdebug_completed`, `${__dirname}/../agent/echo.js`);
