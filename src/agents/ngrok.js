@@ -63,7 +63,7 @@ class NgrokAgent {
 
         console.log(`Ngrok forwarding: ${ngrokUrl} => http://localhost:${this.ngrokServerPort} (auth: ${this.ngrokAuth})`);
 
-        return fs.readFileSync(`${__dirname}/../agent/agent-ngrok.js`, {encoding: 'utf8'});
+        return fs.readFileSync(`${__dirname}/../../agent/agent-ngrok.js`, {encoding: 'utf8'});
     }
 
     async stop() {

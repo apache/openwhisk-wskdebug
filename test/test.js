@@ -70,6 +70,18 @@ function assertAllNocksInvoked() {
     );
 }
 
+function openwhiskNock() {
+    return openwhisk;
+}
+
+function openwhiskApiUrlActions() {
+    return `/api/v1/namespaces/${FAKE_OPENWHISK_NAMESPACE}/actions`;
+}
+
+function openwhiskApiAuthHeader() {
+    return `Basic ${FAKE_OPENWHISK_AUTH}`;
+}
+
 function agentRetryResponse() {
     return {
         response: {
@@ -101,8 +113,8 @@ function agentExitResponse() {
 function mockAction(name, code, binary=false) {
     // reading action without code
     openwhisk
-        .get(`/api/v1/namespaces/${FAKE_OPENWHISK_NAMESPACE}/actions/${name}`)
-        .matchHeader("authorization", `Basic ${FAKE_OPENWHISK_AUTH}`)
+        .get(`${openwhiskApiUrlActions()}/${name}`)
+        .matchHeader("authorization", openwhiskApiAuthHeader())
         .query({"code":"false"})
         .reply(200, nodejsActionDescription(name, binary));
 
@@ -112,56 +124,78 @@ function mockAction(name, code, binary=false) {
 
     // reading action with code
     openwhisk
-        .get(`/api/v1/namespaces/${FAKE_OPENWHISK_NAMESPACE}/actions/${name}`)
-        .matchHeader("authorization", `Basic ${FAKE_OPENWHISK_AUTH}`)
+        .get(`${openwhiskApiUrlActions()}/${name}`)
+        .matchHeader("authorization", openwhiskApiAuthHeader())
         .reply(200, action);
 }
 
-function expectAgent(name, code, binary=false) {
+function mockCreateBackupAction(name, binary=false) {
     const backupName = name + WSKDEBUG_BACKUP_ACTION_SUFFIX;
 
     // wskdebug creating the backup action
     openwhisk
-        .put(`/api/v1/namespaces/${FAKE_OPENWHISK_NAMESPACE}/actions/${backupName}?overwrite=true`)
-        .matchHeader("authorization", `Basic ${FAKE_OPENWHISK_AUTH}`)
+        .put(`${openwhiskApiUrlActions()}/${backupName}?overwrite=true`)
+        .matchHeader("authorization", openwhiskApiAuthHeader())
         .reply(200, nodejsActionDescription(backupName, binary));
+}
 
-    // wskdebug creating the backup action
+function mockInstallAgent(name) {
+    // wskdebug overwriting the action with the agent
     openwhisk
         .put(
-            `/api/v1/namespaces/${FAKE_OPENWHISK_NAMESPACE}/actions/${name}?overwrite=true`,
+            `${openwhiskApiUrlActions()}/${name}?overwrite=true`,
             body => body.annotations.some(v => v.key === "wskdebug" && v.value === true)
         )
-        .matchHeader("authorization", `Basic ${FAKE_OPENWHISK_AUTH}`)
+        .matchHeader("authorization", openwhiskApiAuthHeader())
         .reply(200, nodejsActionDescription(name));
+}
+
+function mockReadBackupAction(name, code, binary=false) {
+    const backupName = name + WSKDEBUG_BACKUP_ACTION_SUFFIX;
 
     // reading it later on restore
     openwhisk
-        .get(`/api/v1/namespaces/${FAKE_OPENWHISK_NAMESPACE}/actions/${backupName}`)
-        .matchHeader("authorization", `Basic ${FAKE_OPENWHISK_AUTH}`)
+        .get(`${openwhiskApiUrlActions()}/${backupName}`)
+        .matchHeader("authorization", openwhiskApiAuthHeader())
         .reply(200, Object.assign(nodejsActionDescription(backupName, binary), { exec: { code } }));
+}
 
+function mockRestoreAction(name, code, binary=false) {
     // restoring action
     openwhisk
         .put(
-            `/api/v1/namespaces/${FAKE_OPENWHISK_NAMESPACE}/actions/${name}?overwrite=true`,
+            `${openwhiskApiUrlActions()}/${name}?overwrite=true`,
             body => body.exec && body.exec.code === code
         )
-        .matchHeader("authorization", `Basic ${FAKE_OPENWHISK_AUTH}`)
+        .matchHeader("authorization", openwhiskApiAuthHeader())
         .reply(200, nodejsActionDescription(name, binary));
+}
+
+function mockRemoveBackupAction(name) {
+    const backupName = name + WSKDEBUG_BACKUP_ACTION_SUFFIX;
 
     // removing backup after restore
     openwhisk
-        .delete(`/api/v1/namespaces/${FAKE_OPENWHISK_NAMESPACE}/actions/${backupName}`)
-        .matchHeader("authorization", `Basic ${FAKE_OPENWHISK_AUTH}`)
+        .delete(`${openwhiskApiUrlActions()}/${backupName}`)
+        .matchHeader("authorization", openwhiskApiAuthHeader())
         .reply(200);
+}
+
+function expectAgent(name, code, binary=false) {
+    mockCreateBackupAction(name, binary);
+    mockInstallAgent(name);
+
+    // shutdown/restore process
+    mockReadBackupAction(name, code, binary);
+    mockRestoreAction(name, code, binary);
+    mockRemoveBackupAction(name);
 }
 
 function nockActivation(name, bodyFn) {
     return openwhisk
-        .post(`/api/v1/namespaces/${FAKE_OPENWHISK_NAMESPACE}/actions/${name}`, bodyFn)
+        .post(`${openwhiskApiUrlActions()}/${name}`, bodyFn)
         .query(true) // support both ?blocking=true and non blocking (no query params)
-        .matchHeader("authorization", `Basic ${FAKE_OPENWHISK_AUTH}`);
+        .matchHeader("authorization", openwhiskApiAuthHeader());
 }
 
 function mockAgentPoll(name) {
@@ -328,7 +362,7 @@ function mockOpenwhiskSwagger(openwhisk) {
         .get('/')
         .optionally()
         .matchHeader("accept", "application/json")
-        .matchHeader("authorization", `Basic ${FAKE_OPENWHISK_AUTH}`)
+        .matchHeader("authorization", openwhiskApiAuthHeader())
         .reply(200, {
             "api_paths": ["/api/v1"],
             "description": "OpenWhisk",
@@ -394,7 +428,7 @@ function mockOpenwhiskSwagger(openwhisk) {
         .get('/api/v1')
         .optionally()
         .matchHeader("accept", "application/json")
-        .matchHeader("authorization", `Basic ${FAKE_OPENWHISK_AUTH}`)
+        .matchHeader("authorization", openwhiskApiAuthHeader())
         .reply(200,{
             "api_version":"1.0.0",
             "api_version_path":"v1",
@@ -411,7 +445,7 @@ function mockOpenwhiskSwagger(openwhisk) {
         .get('/api/v1/api-docs')
         .optionally()
         .matchHeader("accept", "application/json")
-        .matchHeader("authorization", `Basic ${FAKE_OPENWHISK_AUTH}`)
+        .matchHeader("authorization", openwhiskApiAuthHeader())
         .reply(200, JSON.parse(fs.readFileSync("./test/openwhisk-swagger.json")));
 }
 
@@ -487,7 +521,16 @@ module.exports = {
     mockActionAndInvocation,
     mockActionDoubleInvocation,
     // advanced
+    openwhiskNock,
+    openwhiskApiUrlActions,
+    openwhiskApiAuthHeader,
     mockAction,
+    mockCreateBackupAction,
+    mockInstallAgent,
+    mockReadBackupAction,
+    mockRestoreAction,
+    mockRemoveBackupAction,
+    nodejsActionDescription,
     expectAgent,
     nockActivation,
     expectAgentInvocation,
