@@ -40,7 +40,7 @@ class Watcher {
             this.liveReloadServer = livereload.createServer({
                 port: this.argv.livereloadPort,
                 noListen: !this.argv.livereload,
-                exclusions: [this.argv.buildPath, "node_modules/**"],
+                exclusions: [this.argv.buildPath, "**/node_modules/**", "**/.*"],
                 exts: this.argv.watchExts || ["json", "js", "ts", "coffee", "py", "rb", "erb", "go", "java", "scala", "php", "swift", "rs", "cs", "bal", "php", "php5"],
                 extraExts: []
             });
