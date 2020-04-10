@@ -155,7 +155,7 @@ To use custom credentials from a custom `.wskprops` and/or use a developer-speci
     WSK_CONFIG_FILE=/Users/user/.wskprops-custom
     WSK_PACKAGE=my-package
     ```
-    
+
    Set either of the variables as needed.
 
 2. Make sure to not commit this file into source control, by e.g. adding `.env` to a `.gitignore` file.
