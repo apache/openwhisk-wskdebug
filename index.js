@@ -258,6 +258,10 @@ function normalizeArgs(argv) {
     argv.invokeParams = argv.P;
     argv.invokeAction = argv.a;
     argv.onChange = argv.r;
+
+    if (process.env.WSK_PACKAGE && argv.action && !argv.action.includes("/")) {
+        argv.action = `${process.env.WSK_PACKAGE}/${argv.action}`;
+    }
 }
 
 function printErrorAndExit(err, argv) {
