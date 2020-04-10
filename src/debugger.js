@@ -34,6 +34,11 @@ class Debugger {
         this.actionName = argv.action;
 
         this.wskProps = wskprops.get();
+        console.log(this.wskProps);
+        if (Object.keys(this.wskProps).length === 0) {
+            console.error(`Error: Missing openwhisk credentials. Found no ~/.wskprops file or WSK_* environment variable.`);
+            process.exit(1);
+        }
         if (argv.ignoreCerts) {
             this.wskProps.ignore_certs = true;
         }
@@ -221,7 +226,12 @@ class Debugger {
 
     async setupWsk() {
         if (!this.wsk) {
-            this.wsk = openwhisk(this.wskProps);
+            try {
+                this.wsk = openwhisk(this.wskProps);
+            } catch (err) {
+                console.error(`Error: Could not setup openwhisk client: ${err.message}`);
+                process.exit(1);
+            }
             if (this.wskProps.namespace === undefined) {
                 // there is a strict 1-1 bijection between auth and namespace, hence auth is enough.
                 // while the openwhisk() client does not care about the namespace being set,
