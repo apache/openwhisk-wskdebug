@@ -124,7 +124,7 @@ The action to debug (e.g. `myaction`) must already be deployed.
 
 Add the configuration below to your [launch.json](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations). Replace `MYACTION` with the name of your action and `ACTION.js` with the source file containing the action. When you run this, it will start wskdebug and should automatically connect the debugger.
 
-```
+```json
     "configurations": [
         {
             "type": "node",
@@ -144,6 +144,41 @@ Stop the debugger in VS Code to end the debugging session and `wskdebug`.
 This snippets enables browser LiveReloading using `-l`. For other reloading options, see [live reloading](#live-reloading).
 
 For troubleshooting, you can run the debugger in verbose mode by adding `"-v"` to the `args` array.
+
+#### Control wskprops credentials
+
+To use custom credentials from a custom `.wskprops` and/or use a developer-specific openwhisk package name, but avoid committing that into your source control system, you can use an `.env` file.
+
+1. Put this `.env` file in your VS Code project root:
+
+    ```
+    WSK_CONFIG_FILE=/Users/user/.wskprops-custom
+    WSK_PACKAGE=my-package
+    ```
+    
+   Set either of the variables as needed.
+
+2. Make sure to not commit this file into source control, by e.g. adding `.env` to a `.gitignore` file.
+
+2. Add an `envFile` setting to the `.vscode/launch.json`, which you can share with co-workers and commit to source control:
+
+    ```json
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "wskdebug",
+            "runtimeExecutable": "wskdebug",
+            "args": [ "MYACTION", "ACTION.js", "-l" ],
+            "localRoot": "${workspaceFolder}",
+            "remoteRoot": "/code",
+            "outputCapture": "std",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+    ```
+
+
 
 <a name="nodejs-multiple-actions"></a>
 ### Node.js: Multiple actions
