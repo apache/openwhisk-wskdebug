@@ -74,7 +74,7 @@ To install or update run:
 npm install -g @openwhisk/wskdebug --unsafe-perm=true
 ```
 
-The `--unsafe-perm=true` is [needed](https://github.com/inconshreveable/ngrok/issues/429) for the ngrok dependency.
+The `--unsafe-perm=true` is [needed](https://github.com/bubenshchykov/ngrok/issues/87) for the ngrok dependency.
 
 <a name="uninstall"></a>
 ### Uninstall
@@ -474,7 +474,7 @@ run this instead:
 sudo npm install -g @openwhisk/wskdebug --unsafe-perm=true --allow-root
 ```
 
-The dependency `ngrok` requires full write permission in `/usr/local/lib/node_modules` during its custom install phase. This is a [known ngrok issue](https://github.com/inconshreveable/ngrok/issues/429).
+The dependency `ngrok` requires full write permission in `/usr/local/lib/node_modules` during its custom install phase. This is a [known ngrok issue](https://github.com/bubenshchykov/ngrok/issues/87).
 
 
 ### Does not work, namespace shows as undefined
