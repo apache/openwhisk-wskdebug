@@ -17,7 +17,14 @@
 
 'use strict';
 
-const NgrokAgent = require('./agents/ngrok');
+let NgrokAgent;
+try {
+    // optional dependency, only needed if --ngrok is set
+    NgrokAgent = require('./agents/ngrok');
+} catch (err) {
+    NgrokAgent = null
+}
+
 const fs = require('fs-extra');
 const sleep = require('util').promisify(setTimeout);
 
@@ -79,6 +86,10 @@ class AgentMgr {
         this.wsk = wsk;
         this.actionName = actionName;
         this.polling = true;
+
+        if (this.argv.ngrok && !NgrokAgent) {
+            throw new Error("ngrok dependency required for --ngrok is not installed. Please install it using:\n\n    npm install -g ngrok --unsafe-perm=true\n");
+        }
     }
 
     async readAction() {
@@ -140,7 +151,6 @@ class AgentMgr {
         let agentCode;
         if (this.argv.ngrok) {
             // user manually requested ngrok
-
             this.ngrokAgent = new NgrokAgent(this.argv, invoker);
 
             // agent using ngrok for forwarding
