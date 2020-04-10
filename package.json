@@ -46,9 +46,11 @@
         "isomorphic-fetch": "^2.2.1",
         "livereload": "^0.9.1",
         "manakin": "^0.5.2",
-        "ngrok": "^3.2.7",
         "openwhisk": "^3.21.1",
         "yargs": "^15.3.1"
+    },
+    "peerDependencies": {
+        "ngrok": "^3.2.7"
     },
     "devDependencies": {
         "chmodr": "^1.2.0",
