@@ -19,6 +19,7 @@
         "wskdebug": "./wskdebug.js"
     },
     "scripts": {
+        "pretest": "npm install --no-save ngrok",
         "test": "nyc mocha test/**/*.test.js",
         "posttest": "eslint .",
         "report-coverage": "nyc report --reporter=json && codecov -f coverage/coverage-final.json"
