@@ -34,7 +34,6 @@ class Debugger {
         this.actionName = argv.action;
 
         this.wskProps = wskprops.get();
-        console.log(this.wskProps);
         if (Object.keys(this.wskProps).length === 0) {
             console.error(`Error: Missing openwhisk credentials. Found no ~/.wskprops file or WSK_* environment variable.`);
             process.exit(1);
