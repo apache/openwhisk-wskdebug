@@ -26,7 +26,13 @@ UTIL_DIR="$HOMEDIR/openwhisk-utilities"
 
 # clone OpenWhisk utilities repo. in order to run scanCode.py
 cd $HOMEDIR
-git clone https://github.com/apache/openwhisk-utilities.git
+
+if [ ! -d "openwhisk-utilities" ] ; then
+    git clone https://github.com/apache/openwhisk-utilities.git
+else
+    cd "openwhisk-utilities"
+    git pull
+fi
 
 # run scancode
 cd $UTIL_DIR
