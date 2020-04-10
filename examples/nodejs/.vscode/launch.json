@@ -49,7 +49,19 @@
             "localRoot": "${workspaceFolder}",
             "remoteRoot": "/code",
             "outputCapture": "std"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "wskdebug with WSK_PACKAGE",
+            "runtimeExecutable": "wskdebug",
+            "args": [
+                "webaction"
+            ],
+            "localRoot": "${workspaceFolder}",
+            "remoteRoot": "/code",
+            "outputCapture": "std",
+            "envFile": "${workspaceFolder}/.env"
         }
-
     ]
 }

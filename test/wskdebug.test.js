@@ -22,12 +22,31 @@
 
 // tests basic cli
 
-const wskdebug = require('../index');
+let wskdebug = require('../index');
 
 const test = require('./test');
 const assert = require('assert');
 const stripAnsi = require('strip-ansi');
 const {execSync} = require('child_process');
+
+const mockRequire = require('mock-require');
+
+function mockDebugger() {
+    const receivedArgv = {};
+
+    class MockDebugger {
+        constructor(argv) {
+            Object.assign(receivedArgv, argv);
+        }
+
+        start() {}
+        run() {}
+    }
+
+    mockRequire("../src/debugger", MockDebugger);
+    wskdebug = mockRequire.reRequire("../index");
+    return receivedArgv;
+}
 
 describe('wskdebug cli', function() {
 
@@ -66,4 +85,25 @@ describe('wskdebug cli', function() {
         assert.equal(stripAnsi(stdio.stdout.trim()), require(`${process.cwd()}/package.json`).version);
     });
 
+    it("should take action argument", async function() {
+        const argv = mockDebugger();
+
+        await wskdebug(`action`);
+        assert.strictEqual(argv.action, "action");
+
+        await wskdebug(`package/action`);
+        assert.strictEqual(argv.action, "package/action");
+    });
+
+    it("should use WSK_PACKAGE env var as package name", async function() {
+        const argv = mockDebugger();
+
+        process.env.WSK_PACKAGE = "envPackage";
+        await wskdebug(`action`);
+        assert.strictEqual(argv.action, "envPackage/action");
+
+        // cli package takes precedence
+        await wskdebug(`package/action`);
+        assert.strictEqual(argv.action, "package/action");
+    });
 });
