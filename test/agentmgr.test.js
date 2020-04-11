@@ -19,6 +19,7 @@
 
 'use strict';
 
+const wskdebug = require('../index');
 const Debugger = require("../src/debugger");
 
 const test = require('./test');
@@ -158,6 +159,88 @@ describe('agentmgr',  function() {
         await test.sleep(500);
 
         await dbgr.stop();
+
+        test.assertAllNocksInvoked();
+    });
+
+    it("should handle if the agent was left around from a previous run", async function() {
+        const action = "myaction";
+        const actionCode = `const main = () => ({ msg: 'CORRECT' });`;
+        const agentCode = `const main = () => ({ msg: 'WRONG' });`;
+
+        // 1. action - both w/o and with code, but holds the agent
+        const agentDescriptionWithoutCode = test.nodejsActionDescription(action);
+        agentDescriptionWithoutCode.annotations.push({ "key": "wskdebug", "value": true });
+
+        const agentDescription = test.nodejsActionDescription(action);
+        agentDescription.annotations.push({ "key": "wskdebug", "value": true });
+        agentDescription.exec.code = agentCode;
+
+        test.openwhiskNock()
+            .get(`${test.openwhiskApiUrlActions()}/${action}`)
+            .matchHeader("authorization", test.openwhiskApiAuthHeader())
+            .query({"code":"false"})
+            .reply(200, agentDescriptionWithoutCode);
+
+        test.openwhiskNock()
+            .get(`${test.openwhiskApiUrlActions()}/${action}`)
+            .matchHeader("authorization", test.openwhiskApiAuthHeader())
+            .optionally()
+            .reply(200, agentDescription);
+
+        // 2. backup of action
+        const actionDescriptionWithoutCode = test.nodejsActionDescription(`${action}_wskdebug_original`);
+        const actionDescription = test.nodejsActionDescription(`${action}_wskdebug_original`);
+        actionDescription.exec.code = actionCode;
+
+        test.openwhiskNock()
+            .get(`${test.openwhiskApiUrlActions()}/${action}_wskdebug_original`)
+            .matchHeader("authorization", test.openwhiskApiAuthHeader())
+            .query({"code":"false"})
+            .reply(200, actionDescriptionWithoutCode);
+
+        test.openwhiskNock()
+            .get(`${test.openwhiskApiUrlActions()}/${action}_wskdebug_original`)
+            .matchHeader("authorization", test.openwhiskApiAuthHeader())
+            .reply(200, actionDescription);
+
+        // 3. restoring (before start)
+        test.openwhiskNock()
+            .put(
+                `${test.openwhiskApiUrlActions()}/${action}?overwrite=true`,
+                body => body.exec && body.exec.code === actionCode
+            )
+            .matchHeader("authorization", test.openwhiskApiAuthHeader())
+            .reply(200, agentDescriptionWithoutCode);
+
+        test.mockRemoveBackupAction(action);
+
+        // 4. install agent
+        test.openwhiskNock()
+            .put(
+                `${test.openwhiskApiUrlActions()}/${action}?overwrite=true`,
+                body => body.annotations.some(v => v.key === "wskdebug" && v.value === true)
+            )
+            .matchHeader("authorization", test.openwhiskApiAuthHeader())
+            .reply(200, agentDescription);
+
+        test.mockCreateBackupAction(action);
+
+        // 5. invocation
+        test.expectAgentInvocation(
+            action,
+            {},
+            { msg: "CORRECT" }
+        );
+
+        // 6. restore
+        test.mockReadBackupAction(action, actionCode);
+        test.mockRestoreAction(action, actionCode);
+        test.mockRemoveBackupAction(action);
+
+        // -----------------
+
+        await wskdebug(`${action}`);
 
         test.assertAllNocksInvoked();
     });

@@ -213,6 +213,7 @@ function mockAgentPoll(name) {
 function expectAgentInvocation(name, params, result) {
     params = params || {};
     const activationId = Date.now();
+    result = result || {};
     result.$activationId = activationId;
 
     // wskdebug agent ping for new activation

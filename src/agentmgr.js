@@ -92,7 +92,10 @@ class AgentMgr {
         }
     }
 
-    async readAction() {
+    /**
+     * Fast way to get just the action metadata
+     */
+    async peekAction() {
         if (this.argv.verbose) {
             console.log(`Getting action metadata from OpenWhisk: ${this.actionName}`);
         }
@@ -101,9 +104,7 @@ class AgentMgr {
             throw new Error(`Action not found: ${this.actionName}`);
         }
 
-        let agentAlreadyInstalled = false;
-
-        // check if this actoin needs to
+        // check if there was an agent leftover
         if (isAgent(action)) {
             // ups, action is our agent, not the original
             // happens if a previous wskdebug was killed and could not restore before it exited
@@ -111,7 +112,7 @@ class AgentMgr {
 
             // check the backup action
             try {
-                const backup = await this.wsk.actions.get(backupName);
+                const backup = await getWskActionWithoutCode(this.wsk, backupName);
 
                 if (isAgent(backup)) {
                     // backup is also an agent (should not happen)
@@ -124,7 +125,6 @@ class AgentMgr {
 
                     // need to look at the original action
                     action = backup;
-                    agentAlreadyInstalled = true;
                     this.agentInstalled = true;
                 }
 
@@ -139,7 +139,21 @@ class AgentMgr {
                 }
             }
         }
-        return {action, agentAlreadyInstalled };
+        return action;
+    }
+
+    async readActionWithCode() {
+        if (this.argv.verbose) {
+            console.log(`Fetching action code from OpenWhisk: ${this.actionName}`);
+        }
+
+        // user can switch between agents (ngrok or not), hence we need to restore first
+        // (better would be to track the agent + its version and avoid a restore, but that's TBD)
+        if (this.agentInstalled) {
+            return this.restoreAction();
+        }
+
+        return this.wsk.actions.get(this.actionName);
     }
 
     async installAgent(action, invoker) {
@@ -218,7 +232,9 @@ class AgentMgr {
 
     async shutdown() {
         try {
-            await this.restoreAction();
+            if (this.agentInstalled) {
+                await this.restoreAction();
+            }
         } finally {
             if (this.ngrokAgent) {
                 await this.ngrokAgent.stop();
@@ -378,33 +394,34 @@ class AgentMgr {
     // --------------------------------------< restoring >------------------
 
     async restoreAction() {
-        if (this.agentInstalled) {
-            if (this.argv.verbose) {
-                console.log();
-                console.log(`Restoring action`);
-            }
+        if (this.argv.verbose) {
+            console.log();
+            console.log(`Restoring action`);
+        }
 
-            const copy = getActionCopyName(this.actionName);
+        const copy = getActionCopyName(this.actionName);
 
-            try {
-                const original = await this.wsk.actions.get(copy);
+        try {
+            // the original was backed up in the copy
+            const original = await this.wsk.actions.get(copy);
 
-                // copy the backup (copy) to the regular action
-                await this.wsk.actions.update({
-                    name: this.actionName,
-                    action: original
-                });
+            // copy the backup (copy) to the regular action
+            await this.wsk.actions.update({
+                name: this.actionName,
+                action: original
+            });
 
-                // remove the backup
-                await this.wsk.actions.delete(copy);
+            // remove the backup
+            await this.wsk.actions.delete(copy);
 
-                // remove any helpers if they exist
-                await deleteActionIfExists(this.wsk, `${this.actionName}_wskdebug_invoked`);
-                await deleteActionIfExists(this.wsk, `${this.actionName}_wskdebug_completed`);
+            // remove any helpers if they exist
+            await deleteActionIfExists(this.wsk, `${this.actionName}_wskdebug_invoked`);
+            await deleteActionIfExists(this.wsk, `${this.actionName}_wskdebug_completed`);
 
-            } catch (e) {
-                console.error("Error while restoring original action:", e);
-            }
+            return original;
+
+        } catch (e) {
+            console.error("Error while restoring original action:", e);
         }
     }
 
