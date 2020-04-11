@@ -54,11 +54,11 @@ class Debugger {
 
         console.info(`Starting debugger for /${this.wskProps.namespace}/${this.actionName}`);
 
-        // get the action
-        const { action, agentAlreadyInstalled } = await this.agentMgr.readAction();
+        // get the action metadata
+        const actionMetadata = await this.agentMgr.peekAction();
 
         // local debug container
-        this.invoker = new OpenWhiskInvoker(this.actionName, action, this.argv, this.wskProps, this.wsk);
+        this.invoker = new OpenWhiskInvoker(this.actionName, actionMetadata, this.argv, this.wskProps, this.wsk);
 
         try {
             // run build initially (would be required by starting container)
@@ -71,22 +71,11 @@ class Debugger {
             await this.invoker.startContainer();
 
             // get code and /init local container
-            if (this.argv.verbose) {
-                console.log(`Fetching action code from OpenWhisk: ${this.actionName}`);
-            }
-            const actionWithCode = await this.wsk.actions.get(this.actionName);
-            action.exec = actionWithCode.exec;
+            const actionWithCode = await this.agentMgr.readActionWithCode();
             await this.invoker.init(actionWithCode);
 
             // setup agent in openwhisk
-
-            // user can switch between agents (ngrok or not), hence we need to restore
-            // (better would be to track the agent + its version and avoid a restore, but that's TBD)
-            if (agentAlreadyInstalled) {
-                await this.agentMgr.restoreAction();
-            }
-
-            await this.agentMgr.installAgent(action, this.invoker);
+            await this.agentMgr.installAgent(actionWithCode, this.invoker);
 
             if (this.argv.onStart) {
                 console.log("On start:", this.argv.onStart);
