@@ -50,6 +50,11 @@ function mockDebugger() {
 
 describe('wskdebug cli', function() {
 
+    after(function() {
+        // stop mock otherwise bad effect on other tests
+        mockRequire.stop("../src/debugger");
+    })
+
     it("should print version (via wskdebug.js)", async function() {
         this.timeout(5000);
         const stdout = execSync("node wskdebug.js --version").toString();
