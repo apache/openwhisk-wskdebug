@@ -192,15 +192,21 @@ class AgentMgr {
             debugTask("started local ngrok proxy");
 
         } else {
-            this.concurrency = await this.openwhiskSupports("concurrency");
+            if (this.argv.disableConcurrency) {
+                this.concurrency = false;
+            } else {
+                this.concurrency = await this.openwhiskSupports("concurrency");
+                if (!this.concurrency) {
+                    console.warn("This OpenWhisk does not support action concurrency. Debugging will be a bit slower. Consider using '--ngrok' which might be a faster option.");
+                }
+            }
+
             if (this.concurrency) {
                 // normal fast agent using concurrent node.js actions
                 agentName = "concurrency";
                 agentCode = await this.getConcurrencyAgent();
 
             } else {
-                console.warn("This OpenWhisk does not support action concurrency. Debugging will be a bit slower. Consider using '--ngrok' which might be a faster option.");
-
                 agentName = "polling activation db";
                 agentCode = await this.getPollingActivationDbAgent();
             }
@@ -282,9 +288,6 @@ class AgentMgr {
         // the $waitForActivation agent activation will block, but only until
         // it times out, hence we need to retry when it fails
         while (this.polling) {
-            if (this.argv.verbose) {
-                process.stdout.write(".");
-            }
             try {
                 let activation;
                 if (this.concurrency) {
@@ -297,6 +300,9 @@ class AgentMgr {
                         blocking: true
                     });
 
+                    if (this.argv.verbose) {
+                        process.stdout.write(".");
+                    }
                 } else {
                     // poll for the newest activation
                     const since = Date.now();
@@ -311,10 +317,6 @@ class AgentMgr {
                     }
 
                     while (true) {
-                        if (this.argv.verbose) {
-                            process.stdout.write(".");
-                        }
-
                         const activations = await this.wsk.activations.list({
                             name: `${name}_wskdebug_invoked`,
                             since: since,
@@ -335,9 +337,17 @@ class AgentMgr {
                             }
                         }
 
+                        if (this.argv.verbose) {
+                            process.stdout.write(".");
+                        }
+
                         // need to limit load on openwhisk (activation list)
                         await sleep(1000);
                     }
+                }
+
+                if (this.argv.verbose) {
+                    process.stdout.write(".");
                 }
 
                 // check for successful response with a new activation
@@ -358,7 +368,7 @@ class AgentMgr {
 
                 } else if (activation && activation.activationId) {
                     // ignore this and retry.
-                    // usually means the action did not respond within one second,
+                    // usually means the action did not respond within one minute,
                     // which in turn is unlikely for the agent who should exit itself
                     // after 50 seconds, so can only happen if there was some delay
                     // outside the action itself
@@ -371,17 +381,27 @@ class AgentMgr {
             } catch (e) {
                 // look for special error codes from agent
                 const errorCode = getActivationError(e).code;
-                // 42 => retry
                 if (errorCode === 42) {
-                    // do nothing
+                    // 42 => retry, do nothing here (except logging progress)
+                    if (this.argv.verbose) {
+                        process.stdout.write(".");
+                    }
+
                 } else if (errorCode === 43) {
                     // 43 => graceful shutdown (for unit tests)
                     console.log("Graceful shutdown requested by agent (only for unit tests)");
                     return null;
+
                 } else if (e.statusCode === 503 && !this.concurrency) {
+                    // 503 => openwhisk activation DB likely overloaded with requests, warn, wait a bit and retry
+
+                    if (this.argv.verbose) {
+                        console.log("x");
+                    }
                     console.warn("Server responded with 503 while looking for new activation records. Consider using --ngrok option.")
-                    // can be server is overloaded with activation list requests, wait a bit extra and retry
-                    sleep(1000);
+
+                    await sleep(5000);
+
                 } else {
                     // otherwise log error and abort
                     console.error();
@@ -544,7 +564,7 @@ class AgentMgr {
                     code: fs.readFileSync(file, {encoding: 'utf8'})
                 },
                 limits: {
-                    timeout: (this.argv.agentTimeout || 300) * 1000
+                    timeout: (this.argv.agentTimeout || 30) * 1000
                 },
                 annotations: [
                     { key: "description", value: `wskdebug agent helper. temporarily installed.` }
