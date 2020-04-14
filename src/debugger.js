@@ -24,12 +24,17 @@ const Watcher = require('./watcher');
 const openwhisk = require('openwhisk');
 const { spawnSync } = require('child_process');
 const sleep = require('util').promisify(setTimeout);
+const debug = require('./debug');
+const prettyBytes = require('pretty-bytes');
+const prettyMilliseconds = require('pretty-ms');
 
 /**
  * Central component of wskdebug.
  */
 class Debugger {
     constructor(argv) {
+        this.startTime = Date.now();
+        debug("starting debugger");
         this.argv = argv;
         this.actionName = argv.action;
 
@@ -51,11 +56,14 @@ class Debugger {
 
         // quick fail for missing requirements such as docker not running
         await OpenWhiskInvoker.checkIfAvailable();
+        debug("verified that docker is available and running");
 
         console.info(`Starting debugger for /${this.wskProps.namespace}/${this.actionName}`);
 
         // get the action metadata
         const actionMetadata = await this.agentMgr.peekAction();
+
+        debug("fetched action metadata from openwhisk");
 
         // local debug container
         this.invoker = new OpenWhiskInvoker(this.actionName, actionMetadata, this.argv, this.wskProps, this.wsk);
@@ -70,9 +78,16 @@ class Debugger {
             // start container - get it up fast for VSCode to connect within its 10 seconds timeout
             await this.invoker.startContainer();
 
+            debug(`started container: ${this.invoker.name()}`);
+
             // get code and /init local container
             const actionWithCode = await this.agentMgr.readActionWithCode();
+
+            debug(`fetched action code from openwhisk (${prettyBytes(actionWithCode.exec.code.length)})`);
+
             await this.invoker.init(actionWithCode);
+
+            debug("installed action on container (/init)");
 
             // setup agent in openwhisk
             await this.agentMgr.installAgent(actionWithCode, this.invoker);
@@ -87,10 +102,17 @@ class Debugger {
 
             console.log();
             console.info(`Action     : ${this.actionName}`);
-            this.invoker.logInfo();
+            if (this.sourcePath) {
+                console.info(`Sources    : ${this.invoker.getSourcePath()}`);
+            }
+            console.info(`Image      : ${this.invoker.getImage()}`);
+            console.info(`Container  : ${this.invoker.name()}`);
+            console.info(`Debug type : ${this.invoker.getDebugKind()}`);
+            console.info(`Debug port : localhost:${this.invoker.getPort()}`);
             if (this.argv.condition) {
                 console.info(`Condition  : ${this.argv.condition}`);
             }
+            console.info(`Startup    : ${prettyMilliseconds(Date.now() - this.startTime)}`)
             console.log();
             console.info(`Ready, waiting for activations! Use CTRL+C to exit`);
 
@@ -183,6 +205,8 @@ class Debugger {
             return;
         }
         this.shuttingDown = true;
+        const shutdownStart = Date.now();
+        debug("shutting down...");
 
         // only log this if we started properly
         if (this.ready) {
@@ -198,14 +222,16 @@ class Debugger {
         }
         if (this.invoker) {
             await this.tryCatch(this.invoker.stop());
+            debug(`stopped container: ${this.invoker.name()}`);
         }
         if (this.watcher) {
             await this.tryCatch(this.watcher.stop());
+            debug("stopped source file watching");
         }
 
         // only log this if we started properly
         if (this.ready) {
-            console.log(`Done`);
+            console.log(`Done (shutdown took ${prettyMilliseconds(Date.now() - shutdownStart)})`);
         }
         this.ready = false;
     }
@@ -234,6 +260,7 @@ class Debugger {
                     process.exit(2);
                 }
                 this.wskProps.namespace = namespaces[0];
+                debug(`fetched namespace name: ${this.wskProps.namespace} (was not in wskprops file)`);
             }
         }
     }

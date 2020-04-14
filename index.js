@@ -21,6 +21,7 @@ const yargs = require("yargs");
 const Debugger = require("./src/debugger");
 const path = require("path");
 const fs = require("fs");
+const debug = require('./src/debug');
 
 function enableConsoleColors() {
     // colorful console.error() and co
@@ -286,6 +287,7 @@ function registerExitHandler(dbg) {
 }
 
 async function wskdebug(args, isCommandLine=false) {
+    debug("wskdebug arguments:", args);
     const originalConsole = enableConsoleColors();
 
     try {

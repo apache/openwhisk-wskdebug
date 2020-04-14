@@ -20,6 +20,7 @@
 const fs = require('fs-extra');
 const livereload = require('livereload');
 const { spawnSync } = require('child_process');
+const debug = require('./debug');
 
 class Watcher {
     constructor(argv, wsk) {
@@ -105,6 +106,7 @@ class Watcher {
             if (this.argv.livereload) {
                 console.info(`LiveReload enabled for ${watch} on port ${this.liveReloadServer.config.port}`);
             }
+            debug("started source file watching");
         }
     }
 

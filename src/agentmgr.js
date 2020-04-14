@@ -27,6 +27,7 @@ try {
 
 const fs = require('fs-extra');
 const sleep = require('util').promisify(setTimeout);
+const debug = require('./debug');
 
 function getAnnotation(action, key) {
     const a = action.annotations.find(a => a.key === key);
@@ -76,6 +77,7 @@ async function deleteActionIfExists(wsk, name) {
     if (await actionExists(wsk, name)) {
         await wsk.actions.delete(name);
     }
+    debug(`restore: ensured removal of action ${name}`);
 }
 
 
@@ -170,6 +172,7 @@ class AgentMgr {
             // agent using ngrok for forwarding
             agentName = "ngrok";
             agentCode = await this.ngrokAgent.getAgent(action);
+            debug("started local ngrok proxy");
 
         } else {
             this.concurrency = await this.openwhiskSupports("concurrency");
@@ -197,6 +200,7 @@ class AgentMgr {
             name: backupName,
             action: action
         });
+        debug(`created action backup ${backupName}`);
 
         if (this.argv.verbose) {
             console.log(`Original action backed up at ${backupName}.`);
@@ -220,6 +224,7 @@ class AgentMgr {
                 await this.pushAgent(action, agentCode, backupName);
             }
         }
+        debug(`installed agent (${agentName}) in place of ${this.actionName}`);
 
         if (this.argv.verbose) {
             console.log(`Agent installed.`);
@@ -238,6 +243,7 @@ class AgentMgr {
         } finally {
             if (this.ngrokAgent) {
                 await this.ngrokAgent.stop();
+                debug("ngrok shut down");
             }
         }
     }
@@ -404,15 +410,18 @@ class AgentMgr {
         try {
             // the original was backed up in the copy
             const original = await this.wsk.actions.get(copy);
+            debug("restore: fetched action original from backup copy (move step 1)");
 
             // copy the backup (copy) to the regular action
             await this.wsk.actions.update({
                 name: this.actionName,
                 action: original
             });
+            debug("restore: restored action with original (move step 2)");
 
             // remove the backup
             await this.wsk.actions.delete(copy);
+            debug("restore: deleted backup copy (move step 3)");
 
             // remove any helpers if they exist
             await deleteActionIfExists(this.wsk, `${this.actionName}_wskdebug_invoked`);
@@ -492,6 +501,7 @@ class AgentMgr {
                 ]
             }
         });
+        debug(`created helper action ${actionName}`);
     }
 
     // ----------------------------------------< openwhisk feature detection >-----------------

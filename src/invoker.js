@@ -241,13 +241,20 @@ class OpenWhiskInvoker {
         });
     }
 
-    async logInfo() {
-        if (this.sourcePath) {
-            console.info(`Sources    : ${this.sourcePath}`);
-        }
-        console.info(`Image      : ${this.image}`);
-        console.info(`Debug type : ${this.debugKind}`);
-        console.info(`Debug port : localhost:${this.debug.port}`)
+    getSourcePath() {
+        return this.sourcePath;
+    }
+
+    getImage() {
+        return this.image;
+    }
+
+    getDebugKind() {
+        return this.debugKind;
+    }
+
+    getPort() {
+        return this.debug.port;
     }
 
     async init(actionWithCode) {
