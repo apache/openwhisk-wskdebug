@@ -197,6 +197,11 @@ function yargsOptions(yargs) {
         group: "Agent options:",
         describe: "Remove backup and any helper actions on exit. Makes shutdown slower."
     });
+    yargs.option("ignore-certs", {
+        type: "boolean",
+        group: "Agent options:",
+        describe: "Bypass TLS certificate checking for openwhisk requests."
+    });
 
     // nodejs options
     yargs.option("inspect", {
