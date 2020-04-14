@@ -42,6 +42,7 @@
         "file": "test/logfile.setup.js"
     },
     "dependencies": {
+        "clone": "^2.1.2",
         "debug": "^4.1.1",
         "fetch-retry": "^3.1.0",
         "fs-extra": "^8.1.0",
@@ -58,7 +59,6 @@
     },
     "devDependencies": {
         "chmodr": "^1.2.0",
-        "clone": "^2.1.2",
         "codecov": "^3.6.5",
         "eslint": "^6.8.0",
         "eslint-config-problems": "^4.0.0",

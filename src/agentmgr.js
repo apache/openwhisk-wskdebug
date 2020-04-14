@@ -28,6 +28,8 @@ try {
 const fs = require('fs-extra');
 const sleep = require('util').promisify(setTimeout);
 const debug = require('./debug');
+const prettyBytes = require('pretty-bytes');
+const clone = require('clone');
 
 function getAnnotation(action, key) {
     const a = action.annotations.find(a => a.key === key);
@@ -152,16 +154,32 @@ class AgentMgr {
         // user can switch between agents (ngrok or not), hence we need to restore first
         // (better would be to track the agent + its version and avoid a restore, but that's TBD)
         if (this.agentInstalled) {
-            return this.restoreAction();
+            this.actionWithCode = await this.restoreAction();
+        } else {
+            this.actionWithCode = await this.wsk.actions.get(this.actionName);
+            debug(`fetched action code from openwhisk (${prettyBytes(this.actionWithCode.exec.code.length)})`);
+
+        }
+        // extra sanity check
+        if (isAgent(this.actionWithCode)) {
+            throw new Error("Action seems to be a left over wskdebug agent instead of the original action. Possible bug in wskdebug. Please redeploy your action. Aborting.");
         }
 
-        return this.wsk.actions.get(this.actionName);
+        return this.actionWithCode;
     }
 
-    async installAgent(action, invoker) {
+    async installAgent(invoker) {
         this.agentInstalled = true;
 
         let agentName;
+
+        // base agent on the original action to keep default parameters & annotations
+        const agentAction = this.actionWithCode ? clone(this.actionWithCode) : {
+            exec: {},
+            limits: {},
+            annotations: [],
+            parameters: []
+        };
 
         // choose the right agent implementation
         let agentCode;
@@ -171,7 +189,7 @@ class AgentMgr {
 
             // agent using ngrok for forwarding
             agentName = "ngrok";
-            agentCode = await this.ngrokAgent.getAgent(action);
+            agentCode = await this.ngrokAgent.getAgent(agentAction);
             debug("started local ngrok proxy");
 
         } else {
@@ -198,7 +216,7 @@ class AgentMgr {
         // create copy
         await this.wsk.actions.update({
             name: backupName,
-            action: action
+            action: agentAction
         });
         debug(`created action backup ${backupName}`);
 
@@ -207,21 +225,21 @@ class AgentMgr {
         }
 
         if (this.argv.condition) {
-            action.parameters.push({
+            agentAction.parameters.push({
                 key: "$condition",
                 value: this.argv.condition
             });
         }
 
         try {
-            await this.pushAgent(action, agentCode, backupName);
+            await this.pushAgent(agentAction, agentCode, backupName);
         } catch (e) {
             // openwhisk does not support concurrent nodejs actions, try with another
             if (e.statusCode === 400 && e.error && typeof e.error.error === "string" && e.error.error.includes("concurrency")) {
                 console.log(`The Openwhisk server does not support concurrent actions, using alternative agent. Consider using --ngrok for a possibly faster agent.`);
                 this.concurrency = false;
                 agentCode = await this.getPollingActivationDbAgent();
-                await this.pushAgent(action, agentCode, backupName);
+                await this.pushAgent(agentAction, agentCode, backupName);
             }
         }
         debug(`installed agent (${agentName}) in place of ${this.actionName}`);
@@ -408,20 +426,30 @@ class AgentMgr {
         const copy = getActionCopyName(this.actionName);
 
         try {
-            // the original was backed up in the copy
-            const original = await this.wsk.actions.get(copy);
-            debug("restore: fetched action original from backup copy (move step 1)");
+            // unfortunately, openwhisk does not support a server-side "move action" API,
+            // otherwise the next 3 steps (read, update, delete) could be a single
+            // and presumably fast move operation
+
+            let original;
+            if (this.actionWithCode) {
+                // normal case during shutdown: we have the original action in memory
+                original = this.actionWithCode;
+            } else {
+                // the original was fetched before or was backed up in the copy
+                original = await this.wsk.actions.get(copy)
+                debug("restore: fetched action original from backup copy");
+            }
 
             // copy the backup (copy) to the regular action
             await this.wsk.actions.update({
                 name: this.actionName,
                 action: original
             });
-            debug("restore: restored action with original (move step 2)");
+            debug("restore: restored original action");
 
             // remove the backup
             await this.wsk.actions.delete(copy);
-            debug("restore: deleted backup copy (move step 3)");
+            debug("restore: deleted backup copy");
 
             // remove any helpers if they exist
             await deleteActionIfExists(this.wsk, `${this.actionName}_wskdebug_invoked`);

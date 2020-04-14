@@ -155,8 +155,7 @@ describe('ngrok',  function() {
             .matchHeader("authorization", test.openwhiskApiAuthHeader())
             .reply(200, test.nodejsActionDescription(actionName));
 
-        test.mockReadBackupAction(actionName);
-        test.mockRestoreAction(actionName);
+        test.mockRestoreAction(actionName, code);
         test.mockRemoveBackupAction(actionName);
 
         // wskdebug myaction action.js --ngrok -p ${test.port}
