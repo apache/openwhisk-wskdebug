@@ -156,7 +156,6 @@ describe('ngrok',  function() {
             .reply(200, test.nodejsActionDescription(actionName));
 
         test.mockRestoreAction(actionName, code);
-        test.mockRemoveBackupAction(actionName);
 
         // wskdebug myaction action.js --ngrok -p ${test.port}
         const argv = {

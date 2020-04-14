@@ -192,7 +192,6 @@ function expectAgent(name, code, binary=false) {
 
     // shutdown/restore process
     mockRestoreAction(name, code, binary);
-    mockRemoveBackupAction(name);
 }
 
 function nockActivation(name, bodyFn) {

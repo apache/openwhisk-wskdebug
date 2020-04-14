@@ -192,6 +192,11 @@ function yargsOptions(yargs) {
         group: "Agent options:",
         describe: "Ngrok region to use. Defaults to 'us'."
     });
+    yargs.option("cleanup", {
+        type: "boolean",
+        group: "Agent options:",
+        describe: "Remove backup and any helper actions on exit. Makes shutdown slower."
+    });
 
     // nodejs options
     yargs.option("inspect", {
