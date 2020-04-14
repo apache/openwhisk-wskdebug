@@ -213,15 +213,18 @@ class AgentMgr {
             console.log(`Installing agent in OpenWhisk (${agentName})...`);
         }
 
-        // create copy
-        await this.wsk.actions.update({
-            name: backupName,
-            action: agentAction
-        });
-        debug(`created action backup ${backupName}`);
+        // create copy in case wskdebug gets killed hard
+        // do async as this can be slow for larger actions and this is part of the critical startup path
+        this.createBackup = (async () => {
+            await this.wsk.actions.update({
+                name: backupName,
+                action: agentAction
+            });
+            debug(`created action backup ${backupName}`);
+        })();
 
         if (this.argv.verbose) {
-            console.log(`Original action backed up at ${backupName}.`);
+            console.log(`Original action will be backed up at ${backupName}.`);
         }
 
         if (this.argv.condition) {
@@ -255,6 +258,9 @@ class AgentMgr {
 
     async shutdown() {
         try {
+            // make sure we finished creating the backup
+            await this.createBackup;
+
             if (this.agentInstalled) {
                 await this.restoreAction();
             }
