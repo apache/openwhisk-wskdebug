@@ -60,10 +60,6 @@ class Debugger {
         this.agentMgr = new AgentMgr(this.argv, this.wsk, this.actionName);
         this.watcher = new Watcher(this.argv, this.wsk);
 
-        // quick fail for missing requirements such as docker not running
-        await OpenWhiskInvoker.checkIfAvailable();
-        debug("verified that docker is available and running");
-
         // get the action metadata
         const actionMetadata = await this.agentMgr.peekAction();
         debug("fetched action metadata from openwhisk");
