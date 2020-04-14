@@ -110,6 +110,7 @@ The action to debug (e.g. `myaction`) must already be deployed.
 + [Node.js: Plain usage](#nodejs-plain-usage)
 + [Node.js: Chrome DevTools](#nodejs-chrome-devtools)
 + [Node.js: node-inspect command line](#nodejs-node-inspect-command-line)
++ [Enable debug logging](#enable-debug-logging)
 + [Unsupported action kinds](#unsupported-action-kinds)
 + [Source mounting](#source-mounting)
 + [Live reloading](#live-reloading)
@@ -158,7 +159,7 @@ To use custom credentials from a custom `.wskprops` and/or use a developer-speci
 
 2. Make sure to not commit this file into source control, by e.g. adding `.env` to a `.gitignore` file.
 
-2. Add an `envFile` setting to the `.vscode/launch.json`, which you can share with co-workers and commit to source control:
+3. Add an `envFile` setting to the `.vscode/launch.json`, which you can share with co-workers and commit to source control:
 
     ```json
     "configurations": [
@@ -175,8 +176,6 @@ To use custom credentials from a custom `.wskprops` and/or use a developer-speci
         }
     ]
     ```
-
-
 
 <a name="nodejs-multiple-actions"></a>
 ### Node.js: Multiple actions
@@ -285,6 +284,40 @@ Use the command line Node debugger [node-inspect](https://github.com/nodejs/node
 ```
 node-inspect 127.0.0.1:9229
 ```
+
+<a name="enable-debug-logging"></a>
+### Enable debug logging
+
+To enable debug logs in your action, you can set environment variables:
+
+1. (nodejs) `DEBUG` environment variable from the popular [debug](https://www.npmjs.com/package/debug) library is passed through to the action. Options:
+   - Run wskdebug using
+
+     ```
+     DEBUG=xyz wskdebug myaction
+     ```
+   - Alternatively put it in the `.env` file (see [above](#nodejs-visual-studio-code))
+
+     ```
+     DEBUG=xyz
+     ```
+2. (nodejs) To control the`NODE_DEBUG` [used](https://nodejs.org/api/util.html#util_util_debuglog_section) by built-in node modules, just set the `WSK_NODE_DEBUG` variable. (It is a separate one in order to not affect `wskdebug` itself which is written in nodejs.) Options:
+   - Run wskdebug using
+
+     ```
+     WSK_NODE_DEBUG=NET wskdebug myaction
+     ```
+   - Alternatively put it in the `.env` file (see above)
+
+     ```
+     WSK_NODE_DEBUG=NET
+     ```
+3. Any other custom environment variables that enable debugging or logging features in your action can be set by controlling the docker run arguments using `--docker-args` (note the leading space before `-e`, which is required):
+
+    ```
+    wskdebug --docker-args " -e DEBUG_VAR=something" myaction
+    ```
+
 
 <a name="unsupported-action-kinds"></a>
 ### Unsupported action kinds
