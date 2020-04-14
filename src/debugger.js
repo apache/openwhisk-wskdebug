@@ -25,7 +25,6 @@ const openwhisk = require('openwhisk');
 const { spawnSync } = require('child_process');
 const sleep = require('util').promisify(setTimeout);
 const debug = require('./debug');
-const prettyBytes = require('pretty-bytes');
 const prettyMilliseconds = require('pretty-ms');
 
 /**
@@ -89,14 +88,12 @@ class Debugger {
             // get code and /init local container
             const actionWithCode = await this.agentMgr.readActionWithCode();
 
-            debug(`fetched action code from openwhisk (${prettyBytes(actionWithCode.exec.code.length)})`);
-
             await this.invoker.init(actionWithCode);
 
             debug("installed action on container (/init)");
 
             // setup agent in openwhisk
-            await this.agentMgr.installAgent(actionWithCode, this.invoker);
+            await this.agentMgr.installAgent(this.invoker);
 
             if (this.argv.onStart) {
                 console.log("On start:", this.argv.onStart);

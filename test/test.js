@@ -191,7 +191,6 @@ function expectAgent(name, code, binary=false) {
     mockInstallAgent(name);
 
     // shutdown/restore process
-    mockReadBackupAction(name, code, binary);
     mockRestoreAction(name, code, binary);
     mockRemoveBackupAction(name);
 }

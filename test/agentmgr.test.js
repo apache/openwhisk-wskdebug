@@ -122,7 +122,6 @@ describe('agentmgr',  function() {
             }]);
 
         // shutdown/restore process
-        test.mockReadBackupAction(action, code);
         test.mockRestoreAction(action, code);
         test.mockRemoveBackupAction(action);
         test.openwhiskNock()
@@ -234,7 +233,6 @@ describe('agentmgr',  function() {
         );
 
         // 6. restore
-        test.mockReadBackupAction(action, actionCode);
         test.mockRestoreAction(action, actionCode);
         test.mockRemoveBackupAction(action);
 
