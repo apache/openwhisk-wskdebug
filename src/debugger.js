@@ -132,11 +132,12 @@ class Debugger {
             await this.watcher.start();
 
             console.log();
-            console.info(`Action     : ${this.actionName}`);
+            console.info(`Action     : /${this.wskProps.namespace}/${this.actionName}`);
             if (this.sourcePath) {
                 console.info(`Sources    : ${this.invoker.getSourcePath()}`);
             }
             console.info(`Image      : ${this.invoker.getImage()}`);
+            console.info(`OpenWhisk  : ${this.wskProps.apihost}`);
             console.info(`Container  : ${this.invoker.name()}`);
             console.info(`Debug type : ${this.invoker.getDebugKind()}`);
             console.info(`Debug port : localhost:${this.invoker.getPort()}`);
