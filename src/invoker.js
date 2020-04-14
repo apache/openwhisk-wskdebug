@@ -83,7 +83,7 @@ class OpenWhiskInvoker {
         this.containerName = this.asContainerName(`wskdebug-${this.action.name}-${Date.now()}`);
     }
 
-    static async checkIfAvailable() {
+    async checkIfDockerAvailable() {
         try {
             execute("docker info", {stdio: 'ignore'});
         } catch (e) {
@@ -188,6 +188,9 @@ class OpenWhiskInvoker {
         const dockerArgsFromUser = this.dockerArgs || "";
 
         let showDockerRunOutput = this.verbose;
+
+        // quick fail for missing requirements such as docker not running
+        await this.checkIfDockerAvailable();
 
         try {
             execute(`docker inspect --type=image ${this.image} 2> /dev/null`);

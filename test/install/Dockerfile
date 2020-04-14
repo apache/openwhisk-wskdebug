@@ -38,4 +38,4 @@ RUN wskdebug --ngrok myaction 2>&1 | grep -A 10 "ngrok dependency required for -
 RUN npm install -g ngrok --unsafe-perm=true
 
 # then we should get another error (as we can't run it without docker)
-RUN wskdebug --ngrok myaction 2>&1 | grep -A 10 "Docker not running on local system. A local docker environment is required for the debugger."
+RUN wskdebug --ngrok myaction 2>&1 | grep -A 10 -E "(Error: Unknown Error From API: socket hang up|Docker not running on local system. A local docker environment is required for the debugger.)"
