@@ -100,6 +100,7 @@ async function doMain(args) {
 }
 
 // OpenWhisk does not like raw exceptions, the error object should be the string message only
+// eslint-disable-next-line no-unused-vars
 async function main(args) {
     try {
         return await doMain(args);
@@ -108,5 +109,3 @@ async function main(args) {
         return Promise.reject({ error: e.message, code: e.code});
     }
 }
-
-module.export = main;
