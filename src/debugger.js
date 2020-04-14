@@ -35,6 +35,7 @@ class Debugger {
     constructor(argv) {
         this.startTime = Date.now();
         debug("starting debugger");
+
         this.argv = argv;
         this.actionName = argv.action;
 
@@ -46,11 +47,16 @@ class Debugger {
         if (argv.ignoreCerts) {
             this.wskProps.ignore_certs = true;
         }
+
+        try {
+            this.wsk = openwhisk(this.wskProps);
+        } catch (err) {
+            console.error(`Error: Could not setup openwhisk client: ${err.message}`);
+            process.exit(1);
+        }
     }
 
     async start() {
-        await this.setupWsk();
-
         this.agentMgr = new AgentMgr(this.argv, this.wsk, this.actionName);
         this.watcher = new Watcher(this.argv, this.wsk);
 
@@ -58,12 +64,12 @@ class Debugger {
         await OpenWhiskInvoker.checkIfAvailable();
         debug("verified that docker is available and running");
 
-        console.info(`Starting debugger for /${this.wskProps.namespace}/${this.actionName}`);
-
         // get the action metadata
         const actionMetadata = await this.agentMgr.peekAction();
-
         debug("fetched action metadata from openwhisk");
+
+        this.wskProps.namespace = actionMetadata.namespace;
+        console.info(`Starting debugger for /${this.wskProps.namespace}/${this.actionName}`);
 
         // local debug container
         this.invoker = new OpenWhiskInvoker(this.actionName, actionMetadata, this.argv, this.wskProps, this.wsk);
@@ -234,35 +240,6 @@ class Debugger {
             console.log(`Done (shutdown took ${prettyMilliseconds(Date.now() - shutdownStart)})`);
         }
         this.ready = false;
-    }
-
-    // ------------------------------------------------< openwhisk utils >------------------
-
-    async setupWsk() {
-        if (!this.wsk) {
-            try {
-                this.wsk = openwhisk(this.wskProps);
-            } catch (err) {
-                console.error(`Error: Could not setup openwhisk client: ${err.message}`);
-                process.exit(1);
-            }
-            if (this.wskProps.namespace === undefined) {
-                // there is a strict 1-1 bijection between auth and namespace, hence auth is enough.
-                // while the openwhisk() client does not care about the namespace being set,
-                // some code here in wskdebug relies on it to be set correctly.
-                const namespaces = await this.wsk.namespaces.list();
-                if (!namespaces || namespaces.length < 1) {
-                    console.error("Error: Unknown namespace. Please specify as NAMESPACE in .wskprops.");
-                    process.exit(2);
-                }
-                if (namespaces.length > 1) {
-                    console.error("Error: OpenWhisk reports access to more than one namespace. Please specify the namespace to use as NAMESPACE in .wskprops.", namespaces);
-                    process.exit(2);
-                }
-                this.wskProps.namespace = namespaces[0];
-                debug(`fetched namespace name: ${this.wskProps.namespace} (was not in wskprops file)`);
-            }
-        }
     }
 
     // ------------------------------------------------< utils >-----------------
