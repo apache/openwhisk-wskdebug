@@ -28,7 +28,6 @@ try {
 const fs = require('fs-extra');
 const sleep = require('util').promisify(setTimeout);
 const debug = require('./debug');
-const prettyBytes = require('pretty-bytes');
 const clone = require('clone');
 
 function getAnnotation(action, key) {
@@ -118,10 +117,12 @@ class AgentMgr {
             try {
                 const backup = await getWskActionWithoutCode(this.wsk, backupName);
 
-                if (isAgent(backup)) {
+                if (!backup) {
                     // backup is also an agent (should not happen)
-                    // backup is useless, delete it
-                    // await this.wsk.actions.delete(backupName);
+                    throw new Error(`Dang! Agent is already installed and action backup is missing.\n\nPlease redeploy your action first before running wskdebug again.`);
+
+                } else if (isAgent(backup)) {
+                    // backup is also an agent (should not happen)
                     throw new Error(`Dang! Agent is already installed and action backup is broken (${backupName}).\n\nPlease redeploy your action first before running wskdebug again.`);
 
                 } else {
@@ -157,8 +158,6 @@ class AgentMgr {
             this.actionWithCode = await this.restoreAction();
         } else {
             this.actionWithCode = await this.wsk.actions.get(this.actionName);
-            debug(`fetched action code from openwhisk (${prettyBytes(this.actionWithCode.exec.code.length)})`);
-
         }
         // extra sanity check
         if (isAgent(this.actionWithCode)) {
@@ -168,7 +167,7 @@ class AgentMgr {
         return this.actionWithCode;
     }
 
-    async installAgent(invoker) {
+    async installAgent(invoker, debugTask) {
         this.agentInstalled = true;
 
         let agentName;
@@ -190,7 +189,7 @@ class AgentMgr {
             // agent using ngrok for forwarding
             agentName = "ngrok";
             agentCode = await this.ngrokAgent.getAgent(agentAction);
-            debug("started local ngrok proxy");
+            debugTask("started local ngrok proxy");
 
         } else {
             this.concurrency = await this.openwhiskSupports("concurrency");
@@ -216,11 +215,13 @@ class AgentMgr {
         // create copy in case wskdebug gets killed hard
         // do async as this can be slow for larger actions and this is part of the critical startup path
         this.createBackup = (async () => {
+            const debugTask = debug.task();
+
             await this.wsk.actions.update({
                 name: backupName,
                 action: agentAction
             });
-            debug(`created action backup ${backupName}`);
+            debugTask(`created action backup ${backupName}`);
         })();
 
         if (this.argv.verbose) {
@@ -245,7 +246,7 @@ class AgentMgr {
                 await this.pushAgent(agentAction, agentCode, backupName);
             }
         }
-        debug(`installed agent (${agentName}) in place of ${this.actionName}`);
+        debugTask(`installed agent '${agentName}' in place of ${this.actionName}`);
 
         if (this.argv.verbose) {
             console.log(`Agent installed.`);

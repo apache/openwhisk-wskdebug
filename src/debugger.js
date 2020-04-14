@@ -25,6 +25,7 @@ const openwhisk = require('openwhisk');
 const { spawnSync } = require('child_process');
 const sleep = require('util').promisify(setTimeout);
 const debug = require('./debug');
+const prettyBytes = require('pretty-bytes');
 const prettyMilliseconds = require('pretty-ms');
 
 /**
@@ -74,26 +75,57 @@ class Debugger {
         this.invoker = new OpenWhiskInvoker(this.actionName, actionMetadata, this.argv, this.wskProps, this.wsk);
 
         try {
-            // run build initially (would be required by starting container)
-            if (this.argv.onBuild) {
-                console.info("=> Build:", this.argv.onBuild);
-                spawnSync(this.argv.onBuild, {shell: true, stdio: "inherit"});
-            }
+            // parallelize slower work using promises
 
-            // start container - get it up fast for VSCode to connect within its 10 seconds timeout
-            await this.invoker.startContainer();
+            // task 1 - start local container
+            const containerTask = (async () => {
+                const debugTask = debug.task();
+                // run build initially (would be required by starting container)
+                if (this.argv.onBuild) {
+                    console.info("=> Build:", this.argv.onBuild);
+                    spawnSync(this.argv.onBuild, {shell: true, stdio: "inherit"});
+                }
 
-            debug(`started container: ${this.invoker.name()}`);
+                // start container - get it up fast for VSCode to connect within its 10 seconds timeout
+                await this.invoker.startContainer();
 
-            // get code and /init local container
-            const actionWithCode = await this.agentMgr.readActionWithCode();
+                debugTask(`started container: ${this.invoker.name()}`);
+            })();
 
-            await this.invoker.init(actionWithCode);
+            // task 2 - fetch action code from openwhisk
+            const openwhiskTask = (async () => {
+                const debugTask = debug.task();
+                const actionWithCode = await this.agentMgr.readActionWithCode();
 
-            debug("installed action on container (/init)");
+                debugTask(`got action code (${prettyBytes(actionWithCode.exec.code.length)})`);
+                return actionWithCode;
+            })();
 
-            // setup agent in openwhisk
-            await this.agentMgr.installAgent(this.invoker);
+            // wait for both tasks 1 & 2
+            const results = await Promise.all([containerTask, openwhiskTask]);
+            const actionWithCode = results[1];
+
+            // parallelize slower work using promises again
+
+            // task 3 - initialize local container with code
+            const initTask = (async () => {
+                const debugTask = debug.task();
+
+                // /init local container
+                await this.invoker.init(actionWithCode);
+
+                debugTask("installed action on container");
+            })();
+
+            // task 4 - install agent in openwhisk
+            const agentTask = (async () => {
+                const debugTask = debug.task();
+
+                // setup agent in openwhisk
+                await this.agentMgr.installAgent(this.invoker, debugTask);
+            })();
+
+            await Promise.all([initTask, agentTask]);
 
             if (this.argv.onStart) {
                 console.log("On start:", this.argv.onStart);
@@ -115,9 +147,8 @@ class Debugger {
             if (this.argv.condition) {
                 console.info(`Condition  : ${this.argv.condition}`);
             }
-            console.info(`Startup    : ${prettyMilliseconds(Date.now() - this.startTime)}`)
             console.log();
-            console.info(`Ready, waiting for activations! Use CTRL+C to exit`);
+            console.info(`Ready for activations. Started in ${prettyMilliseconds(Date.now() - this.startTime)}. Use CTRL+C to exit`);
 
             this.ready = true;
 

@@ -19,3 +19,13 @@
 
 // common debug() instance for shared time spent measurments (+millis)
 module.exports = require('debug')('wskdebug');
+
+// start a sub debug instance for logging times in parallel promises
+module.exports.task = () => {
+    const debug = require('debug')('wskdebug')
+    // trick to start time measurement from now on without logging an extra line
+    debug.log = () => {};
+    debug();
+    delete debug.log;
+    return debug;
+}
