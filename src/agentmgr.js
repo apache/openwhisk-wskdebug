@@ -378,6 +378,10 @@ class AgentMgr {
                     // 43 => graceful shutdown (for unit tests)
                     console.log("Graceful shutdown requested by agent (only for unit tests)");
                     return null;
+                } else if (e.statusCode === 503 && !this.concurrency) {
+                    console.warn("Server responded with 503 while looking for new activation records. Consider using --ngrok option.")
+                    // can be server is overloaded with activation list requests, wait a bit extra and retry
+                    sleep(1000);
                 } else {
                     // otherwise log error and abort
                     console.error();
