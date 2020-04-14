@@ -695,10 +695,10 @@ Contributions are welcomed! Read the [Contributing Guide](.github/CONTRIBUTING.m
 
 Releases are done using the [Apache OpenWhisk Release Process](https://github.com/apache/openwhisk-release/blob/master/docs/release_instructions.md).
 
-`wskdebug` releases are available:
-- on the [Apache OpenWhisk download page](https://openwhisk.apache.org/downloads), stored on Apache mirrors (canonical release)
-- on NPM as [@openwhisk/wskdebug](https://www.npmjs.com/package/@openwhisk/wskdebug) (convenience)
-- as [Github Releases](https://github.com/apache/openwhisk-wskdebug/releases) (linked to source history)
+`wskdebug` releases are made available:
+- on the [Apache OpenWhisk download page](https://openwhisk.apache.org/downloads), stored on Apache mirrors (canonical signed releases)
+- on NPM as [@openwhisk/wskdebug](https://www.npmjs.com/package/@openwhisk/wskdebug) (for convenience, not signed)
+- as [Github Releases](https://github.com/apache/openwhisk-wskdebug/releases) (for tracking release history, linked to source history, not signed)
 
 <a name="licensing"></a>
 ## Licensing
