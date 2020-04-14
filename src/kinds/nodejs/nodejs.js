@@ -36,13 +36,23 @@ module.exports = {
 
     // return extra docker arguments such as mounting the source path
     dockerArgs: function(invoker) {
+        let args = "";
         if (invoker.sourceDir) {
             if (!invoker.sourceFile) {
                 throw new Error("[source-path] or --build-path must point to the action javascript source file, it cannot be a folder.");
             }
 
-            return `-v "${invoker.sourceDir}:${CODE_MOUNT}"`;
+            args += ` -v "${invoker.sourceDir}:${CODE_MOUNT}"`;
         }
+
+        if (process.env.WSK_NODE_DEBUG) {
+            args += ` -e NODE_DEBUG='${process.env.WSK_NODE_DEBUG}'`;
+        }
+        if (process.env.DEBUG) {
+            args += ` -e DEBUG='${process.env.DEBUG}'`;
+        }
+
+        return args;
     },
 
     // return action for /init that mounts the sources specified by invoker.sourcePath

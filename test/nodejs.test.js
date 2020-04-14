@@ -61,6 +61,9 @@ describe('nodejs', function() {
 
     afterEach(function() {
         test.afterEach();
+
+        delete process.env.DEBUG;
+        delete process.env.WSK_NODE_DEBUG;
     });
 
     it("should run an action without local sources", async function() {
@@ -548,14 +551,37 @@ describe('nodejs', function() {
         test.assertAllNocksInvoked();
     });
 
+    it("should pass through DEBUG and NODE_DEBUG env vars", async function() {
+        test.mockActionAndInvocation(
+            "myaction",
+            `function main(params) {
+                return {
+                    msg: 'CORRECT',
+                    debug: process.env.DEBUG,
+                    nodeDebug: process.env.NODE_DEBUG,
+                }
+            }`,
+            { },
+            {
+                msg: "CORRECT",
+                debug: "debug",
+                nodeDebug: "node_debug"
+            }
+        );
+
+        process.env.DEBUG = "debug";
+        process.env.WSK_NODE_DEBUG = "node_debug";
+        await wskdebug(`myaction -p ${test.port}`);
+
+        test.assertAllNocksInvoked();
+    });
+
     // TODO: test -l livereload connection
 
     // TODO: test agents - conditions (unit test agent code locally)
-    // TODO: test agent already installed (debugger.getAction())
 
     // TODO: test breakpoint debugging
     // TODO: test action options
     // TODO: test debugger options
-    // TODO: test non-concurrent openwhisk
 
 });
