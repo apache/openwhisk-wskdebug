@@ -199,7 +199,7 @@ class AgentMgr {
                 agentCode = await this.getConcurrencyAgent();
 
             } else {
-                console.log("This OpenWhisk does not support action concurrency. Debugging will be a bit slower. Consider using '--ngrok' which might be a faster option.");
+                console.warn("This OpenWhisk does not support action concurrency. Debugging will be a bit slower. Consider using '--ngrok' which might be a faster option.");
 
                 agentName = "polling activation db";
                 agentCode = await this.getPollingActivationDbAgent();
@@ -454,13 +454,24 @@ class AgentMgr {
             });
             debug("restore: restored original action");
 
-            // remove the backup
-            await this.wsk.actions.delete(copy);
-            debug("restore: deleted backup copy");
+            if (this.argv.cleanup) {
+                console.log("Removing extra actions due to --cleanup...");
+                // remove the backup
+                await this.wsk.actions.delete(copy);
+                debug("restore: deleted backup copy");
 
-            // remove any helpers if they exist
-            await deleteActionIfExists(this.wsk, `${this.actionName}_wskdebug_invoked`);
-            await deleteActionIfExists(this.wsk, `${this.actionName}_wskdebug_completed`);
+                // remove any helpers if they exist
+                await deleteActionIfExists(this.wsk, `${this.actionName}_wskdebug_invoked`);
+                await deleteActionIfExists(this.wsk, `${this.actionName}_wskdebug_completed`);
+
+            } else {
+                console.warn(`Skipping removal of extra actions. Remove using --cleanup if desired:`);
+                console.warn(`- ${copy}`);
+                if (!this.concurrency) {
+                    console.warn(`- ${this.actionName}_wskdebug_invoked`);
+                    console.warn(`- ${this.actionName}_wskdebug_completed`);
+                }
+            }
 
             return original;
 

@@ -39,10 +39,7 @@ describe('agentmgr',  function() {
         test.afterEach();
     });
 
-    it("should use non-concurrrent agent if openwhisk does not support concurrency", async function() {
-        const action = "myaction";
-        const code = `const main = () => ({ msg: 'WRONG' });`;
-
+    function mockActivationDbAgent(action, code) {
         test.mockAction(action, code);
 
         test.mockCreateBackupAction(action);
@@ -77,7 +74,6 @@ describe('agentmgr',  function() {
             .put(`${test.openwhiskApiUrlActions()}/${action}_wskdebug_completed?overwrite=true`)
             .matchHeader("authorization", test.openwhiskApiAuthHeader())
             .reply(200, test.nodejsActionDescription(action));
-
 
         // invocation
         test.openwhiskNock()
@@ -123,31 +119,17 @@ describe('agentmgr',  function() {
 
         // shutdown/restore process
         test.mockRestoreAction(action, code);
-        test.mockRemoveBackupAction(action);
-        test.openwhiskNock()
-            .get(`${test.openwhiskApiUrlActions()}/${action}_wskdebug_invoked?code=false`)
-            .matchHeader("authorization", test.openwhiskApiAuthHeader())
-            .reply(200, {});
-        test.openwhiskNock()
-            .delete(`${test.openwhiskApiUrlActions()}/${action}_wskdebug_invoked`)
-            .matchHeader("authorization", test.openwhiskApiAuthHeader())
-            .reply(200, {});
-        test.openwhiskNock()
-            .get(`${test.openwhiskApiUrlActions()}/${action}_wskdebug_completed?code=false`)
-            .matchHeader("authorization", test.openwhiskApiAuthHeader())
-            .reply(200, {});
-        test.openwhiskNock()
-            .delete(`${test.openwhiskApiUrlActions()}/${action}_wskdebug_completed`)
-            .matchHeader("authorization", test.openwhiskApiAuthHeader())
-            .reply(200, {});
+    }
 
+    it("should use non-concurrent agent if openwhisk does not support concurrency", async function() {
+        const action = "myaction";
+        const code = `const main = () => ({ msg: 'CORRECT' });`;
 
-        process.chdir("test/nodejs/plain-flat");
+        mockActivationDbAgent(action, code);
+
         const argv = {
             port: test.port,
-            action: "myaction",
-            sourcePath: `${process.cwd()}/action.js`,
-            invokeParams: '{ "key": "invocationOnSourceModification" }'
+            action: "myaction"
         };
 
         const dbgr = new Debugger(argv);
@@ -212,8 +194,6 @@ describe('agentmgr',  function() {
             .matchHeader("authorization", test.openwhiskApiAuthHeader())
             .reply(200, agentDescriptionWithoutCode);
 
-        test.mockRemoveBackupAction(action);
-
         // 4. install agent
         test.openwhiskNock()
             .put(
@@ -234,7 +214,6 @@ describe('agentmgr',  function() {
 
         // 6. restore
         test.mockRestoreAction(action, actionCode);
-        test.mockRemoveBackupAction(action);
 
         // -----------------
 
@@ -242,4 +221,94 @@ describe('agentmgr',  function() {
 
         test.assertAllNocksInvoked();
     });
+
+    it("should remove backup action if --cleanup is set", async function() {
+        const action = "myaction";
+        const code = `const main = () => ({ msg: 'CORRECT' });`;
+
+        test.mockActionAndInvocation(
+            action,
+            code,
+            {},
+            { msg: "CORRECT" }
+        );
+
+        test.mockRemoveBackupAction(action);
+        test.openwhiskNock()
+            .get(`${test.openwhiskApiUrlActions()}/${action}_wskdebug_invoked?code=false`)
+            .matchHeader("authorization", test.openwhiskApiAuthHeader())
+            .reply(200, {});
+        test.openwhiskNock()
+            .delete(`${test.openwhiskApiUrlActions()}/${action}_wskdebug_invoked`)
+            .matchHeader("authorization", test.openwhiskApiAuthHeader())
+            .reply(200, {});
+        test.openwhiskNock()
+            .get(`${test.openwhiskApiUrlActions()}/${action}_wskdebug_completed?code=false`)
+            .matchHeader("authorization", test.openwhiskApiAuthHeader())
+            .reply(200, {});
+        test.openwhiskNock()
+            .delete(`${test.openwhiskApiUrlActions()}/${action}_wskdebug_completed`)
+            .matchHeader("authorization", test.openwhiskApiAuthHeader())
+            .reply(200, {});
+
+        const argv = {
+            port: test.port,
+            action: "myaction",
+            cleanup: true
+        };
+
+        const dbgr = new Debugger(argv);
+        await dbgr.start();
+        dbgr.run();
+
+        // wait a bit
+        await test.sleep(500);
+
+        await dbgr.stop();
+
+        test.assertAllNocksInvoked();
+    });
+
+    it("should remove helper actions if --cleanup is set and activation db agent is used", async function() {
+        const action = "myaction";
+        const code = `const main = () => ({ msg: 'CORRECT' });`;
+
+        mockActivationDbAgent(action, code);
+
+        test.mockRemoveBackupAction(action);
+        test.openwhiskNock()
+            .get(`${test.openwhiskApiUrlActions()}/${action}_wskdebug_invoked?code=false`)
+            .matchHeader("authorization", test.openwhiskApiAuthHeader())
+            .reply(200, {});
+        test.openwhiskNock()
+            .delete(`${test.openwhiskApiUrlActions()}/${action}_wskdebug_invoked`)
+            .matchHeader("authorization", test.openwhiskApiAuthHeader())
+            .reply(200, {});
+        test.openwhiskNock()
+            .get(`${test.openwhiskApiUrlActions()}/${action}_wskdebug_completed?code=false`)
+            .matchHeader("authorization", test.openwhiskApiAuthHeader())
+            .reply(200, {});
+        test.openwhiskNock()
+            .delete(`${test.openwhiskApiUrlActions()}/${action}_wskdebug_completed`)
+            .matchHeader("authorization", test.openwhiskApiAuthHeader())
+            .reply(200, {});
+
+        const argv = {
+            port: test.port,
+            action: "myaction",
+            cleanup: true
+        };
+
+        const dbgr = new Debugger(argv);
+        await dbgr.start();
+        dbgr.run();
+
+        // wait a bit
+        await test.sleep(500);
+
+        await dbgr.stop();
+
+        test.assertAllNocksInvoked();
+    });
+
 });
