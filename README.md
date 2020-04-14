@@ -477,6 +477,9 @@ Agent options:
   --agent-timeout  Debugging agent timeout (seconds). Default: 5 min              [number]
   --ngrok          Use 3rd party service ngrok.com for agent forwarding.         [boolean]
   --ngrok-region   Ngrok region to use. Defaults to 'us'.                         [string]
+  --cleanup        Remove backup and any helper actions on exit. Makes shutdown slower.
+                                                                                 [boolean]
+  --ignore-certs   Bypass TLS certificate checking for openwhisk requests.       [boolean]
 
 Options:
   -v, --verbose  Verbose output. Logs activation parameters and result           [boolean]
