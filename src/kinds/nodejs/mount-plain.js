@@ -41,9 +41,6 @@ function load(path) {
     return fn;
 }
 
-// load and validate on /init for quick feedback
-load(path);
-
 // eslint-disable-next-line no-unused-vars
 function main(args) { // lgtm [js/unused-local-variable]
     // load code again on every new invocation
