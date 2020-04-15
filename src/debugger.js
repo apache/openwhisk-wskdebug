@@ -71,16 +71,18 @@ class Debugger {
         this.invoker = new OpenWhiskInvoker(this.actionName, actionMetadata, this.argv, this.wskProps, this.wsk);
 
         try {
+            // run build initially (would be required by starting container)
+            if (this.argv.onBuild) {
+                console.info("=> Build:", this.argv.onBuild);
+                spawnSync(this.argv.onBuild, {shell: true, stdio: "inherit"});
+            }
+            await this.invoker.prepare();
+
             // parallelize slower work using promises
 
             // task 1 - start local container
             const containerTask = (async () => {
                 const debugTask = debug.task();
-                // run build initially (would be required by starting container)
-                if (this.argv.onBuild) {
-                    console.info("=> Build:", this.argv.onBuild);
-                    spawnSync(this.argv.onBuild, {shell: true, stdio: "inherit"});
-                }
 
                 // start container - get it up fast for VSCode to connect within its 10 seconds timeout
                 await this.invoker.startContainer();

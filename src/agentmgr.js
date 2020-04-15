@@ -264,6 +264,8 @@ class AgentMgr {
     }
 
     async shutdown() {
+        this.shuttingDown = true;
+
         try {
             // make sure we finished creating the backup
             await this.createBackup;
@@ -528,6 +530,11 @@ class AgentMgr {
 
         // this is to support older openwhisks for which nodejs:default is less than version 8
         const nodejs8 = await this.openwhiskSupports("nodejs8");
+
+        if (this.shuttingDown) {
+            // race condition on shutdown during startup due to errors
+            return;
+        }
 
         await this.wsk.actions.update({
             name: this.actionName,
