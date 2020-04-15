@@ -61,6 +61,7 @@ _On the left [Visual Studio Code](https://code.visualstudio.com) in debug mode. 
   * [How it works](#how-it-works)
   * [Development](#development)
   * [Contributing](#contributing)
+  * [Releasing](#releasing)
   * [Licensing](#licensing)
 
 <a name="installation"></a>
@@ -718,6 +719,16 @@ See also [invoker.js](src/invoker.js). Note that some of these might not be set 
 ## Contributing
 
 Contributions are welcomed! Read the [Contributing Guide](.github/CONTRIBUTING.md) for more information.
+
+<a name="releasing"></a>
+## Releasing
+
+Releases are done using the [Apache OpenWhisk Release Process](https://github.com/apache/openwhisk-release/blob/master/docs/release_instructions.md).
+
+`wskdebug` releases are made available:
+- on the [Apache OpenWhisk download page](https://openwhisk.apache.org/downloads), stored on Apache mirrors (canonical signed releases)
+- on NPM as [@openwhisk/wskdebug](https://www.npmjs.com/package/@openwhisk/wskdebug) (for convenience, not signed)
+- as [Github Releases](https://github.com/apache/openwhisk-wskdebug/releases) (for tracking release history, linked to source history, not signed)
 
 <a name="licensing"></a>
 ## Licensing
