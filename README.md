@@ -523,7 +523,35 @@ Options:
 <a name="troubleshooting"></a>
 ## Troubleshooting
 
-### Cannot install globally
+### Cannot install  - EACCES: permission denied, access '/usr/local/lib/node_modules
+
+If you get an error during `npm install -g @openwhisk/wskdebug` like this:
+
+```
+npm ERR! code EACCES
+npm ERR! syscall access
+npm ERR! path /usr/local/lib/node_modules
+npm ERR! errno -13
+npm ERR! Error: EACCES: permission denied, access '/usr/local/lib/node_modules'
+npm ERR!  [Error: EACCES: permission denied, access '/usr/local/lib/node_modules'] {
+npm ERR!   stack: "Error: EACCES: permission denied, access '/usr/local/lib/node_modules'",
+npm ERR!   errno: -13,
+npm ERR!   code: 'EACCES',
+npm ERR!   syscall: 'access',
+npm ERR!   path: '/usr/local/lib/node_modules'
+npm ERR! }
+npm ERR!
+npm ERR! The operation was rejected by your operating system.
+npm ERR! It is likely you do not have the permissions to access this file as the current user
+npm ERR!
+npm ERR! If you believe this might be a permissions issue, please double-check the
+npm ERR! permissions of the file and its containing directories, or try running
+npm ERR! the command again as root/Administrator.
+```
+
+This is a common npm situation, please see npm documentation for different solutions: [Resolving EACCES permissions errors when installing packages globally](https://docs.npmjs.com/resolving-eacces-permissions-errors-when-installing-packages-globally).
+
+### Cannot install ngrok dependency
 
 If you get an error during `npm install -g @openwhisk/wskdebug` like this:
 
@@ -545,15 +573,17 @@ sudo npm install -g @openwhisk/wskdebug --unsafe-perm=true --allow-root
 
 The dependency `ngrok` requires full write permission in `/usr/local/lib/node_modules` during its custom install phase. This is a [known ngrok issue](https://github.com/bubenshchykov/ngrok/issues/87).
 
+Note that since `wskdebug 1.2` the install command `npm install -g @openwhisk/wskdebug --unsafe-perm=true` should work, and since `wskdebug 1.3` ngrok is an optional dependency that is not installed by default, and a plain `npm install -g @openwhisk/wskdebug` should be enough.
+
 
 ### Does not work, namespace shows as undefined
 
-Your `~/.wskprops` must include the correct `NAMESPACE` field. See [issue #3](https://github.com/adobe/wskdebug/issues/3).
+Older versions of `wskdebug` before `1.1.2` required the `NAMESPACE` to be set in the `~/.wskprops`. See [issue #3](https://github.com/adobe/wskdebug/issues/3).
 
 ### No invocations visible in wskdebug
 
 * Is `wskdebug` working against the correct namespace? You can see that in the "Starting debugger for ..." output at the very start. If you tend to use `WSK_CONFIG_FILE` in your shell, please be aware that IDEs starting `wskdebug` will use `~/.wskprops` unless you set the environment variable for the `wskdebug` invocation in the IDE.
-* Wait a bit and try again. Restart (CTRL+C, then start `wskdebug` again), wait a bit and try again. Catching the invocations is not 100% perfect.
+* Wait a bit and try again. Restart (CTRL+C, then start `wskdebug` again), wait a bit and try again. Catching the invocations is not 100% perfect, as OpenWhisk could sometimes start multiple containers for the action and that might break the agents used by wskdebug to forward the invocations locally. A restart overwrites the action and will reset those containers.
 
 ### Port is already allocated
 
