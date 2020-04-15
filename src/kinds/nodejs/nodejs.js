@@ -39,7 +39,7 @@ module.exports = {
         let args = "";
         if (invoker.sourceDir) {
             if (!invoker.sourceFile) {
-                throw new Error("[source-path] or --build-path must point to the action javascript source file, it cannot be a folder.");
+                throw new Error(`[source-path] or --build-path must point to a source file, it cannot be a folder: '${invoker.sourcePath}'`);
             }
 
             args += ` -v "${invoker.sourceDir}:${CODE_MOUNT}"`;
@@ -58,6 +58,10 @@ module.exports = {
     // return action for /init that mounts the sources specified by invoker.sourcePath
     mountAction: function(invoker) {
         // bridge that mounts local source path
+
+        if (fs.statSync(invoker.sourcePath).isDirectory()) {
+            throw new Error(`[source-path] or --build-path must point to a source file, it cannot be a folder: '${invoker.sourcePath}'`);
+        }
 
         // test if code uses commonjs require()
         const isCommonJS = /(\s|=)require\(\s*['"`]/.test(fs.readFileSync(invoker.sourcePath));

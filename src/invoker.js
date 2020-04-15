@@ -119,15 +119,12 @@ class OpenWhiskInvoker {
         return kinds.images[kind];
     }
 
-    async startContainer() {
+    async prepare() {
         const action = this.action;
 
-        // this must run after initial build was kicked off in Debugger.startSourceWatching()
-        // so that built files are present
+        // this must run after initial build was kicked off in Debugger so that built files are present
 
-        // kind and image
-
-        // precendence:
+        // kind and image - precendence:
         // 1. arguments (this.image)
         // 2. action (action.exec.image)
         // 3. defaults (kinds.images[kind])
@@ -138,7 +135,6 @@ class OpenWhiskInvoker {
             throw new Error("Action is of kind 'blackbox', must specify kind using `--kind` argument.");
         }
 
-        // const runtime = kinds[kind] || {};
         this.image = this.image || action.exec.image || await this.getImageForKind(kind);
 
         if (!this.image) {
@@ -174,7 +170,7 @@ class OpenWhiskInvoker {
         }
 
         // limits
-        const memory = (action.limits.memory || OPENWHISK_DEFAULTS.memory) * 1024 * 1024;
+        this.memory = (action.limits.memory || OPENWHISK_DEFAULTS.memory) * 1024 * 1024;
 
         // source mounting
         if (this.sourcePath) {
@@ -184,9 +180,15 @@ class OpenWhiskInvoker {
             }
         }
 
-        const dockerArgsFromKind = resolveValue(this.debug.dockerArgs, this) || "";
-        const dockerArgsFromUser = this.dockerArgs || "";
+        this.dockerArgsFromKind = resolveValue(this.debug.dockerArgs, this) || "";
+        this.dockerArgsFromUser = this.dockerArgs || "";
 
+        if (this.sourcePath && this.debug.mountAction) {
+            this.sourceMountAction = resolveValue(this.debug.mountAction, this);
+        }
+    }
+
+    async startContainer() {
         let showDockerRunOutput = this.verbose;
 
         // quick fail for missing requirements such as docker not running
@@ -220,11 +222,11 @@ class OpenWhiskInvoker {
                 -d
                 --name ${this.name()}
                 --rm
-                -m ${memory}
+                -m ${this.memory}
                 -p ${RUNTIME_PORT}
                 -p ${this.debug.port}:${this.debug.internalPort}
-                ${dockerArgsFromKind}
-                ${dockerArgsFromUser}
+                ${this.dockerArgsFromKind}
+                ${this.dockerArgsFromUser}
                 ${this.image}
                 ${this.debug.command}
             `,
@@ -262,12 +264,13 @@ class OpenWhiskInvoker {
 
     async init(actionWithCode) {
         let action;
-        if (this.sourcePath && this.debug.mountAction) {
-            action = resolveValue(this.debug.mountAction, this);
-
+        if (this.sourceMountAction) {
             if (this.verbose) {
                 console.log(`Mounting sources onto local debug container: ${this.sourcePath}`);
             }
+
+            action = this.sourceMountAction;
+
         } else {
             if (this.verbose) {
                 console.log(`Pushing action code to local debug container: ${this.action.name}`);
