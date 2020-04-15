@@ -23,9 +23,10 @@ const { spawnSync } = require('child_process');
 const debug = require('./debug');
 
 class Watcher {
-    constructor(argv, wsk) {
+    constructor(argv, wsk, spinner) {
         this.argv = argv;
         this.wsk = wsk;
+        this.spinner = spinner;
     }
 
     async start() {
@@ -38,6 +39,8 @@ class Watcher {
              || this.argv.invokeParams
              || this.argv.invokeAction )
         ) {
+            this.spinner.start('Initializing source watching');
+
             this.liveReloadServer = livereload.createServer({
                 port: this.argv.livereloadPort,
                 noListen: !this.argv.livereload,

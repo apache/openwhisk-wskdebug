@@ -27,6 +27,7 @@ const sleep = require('util').promisify(setTimeout);
 const debug = require('./debug');
 const prettyBytes = require('pretty-bytes');
 const prettyMilliseconds = require('pretty-ms');
+const ora = require('ora');
 
 /**
  * Central component of wskdebug.
@@ -54,25 +55,35 @@ class Debugger {
             console.error(`Error: Could not setup openwhisk client: ${err.message}`);
             process.exit(1);
         }
+        this.spinner = ora({color: "blue"});
+        if (debug.enabled) {
+            // disable spinner from outputting anything since we have all the debug() logs
+            this.spinner.start = () => {};
+            this.spinner.stop = () => {};
+        }
+        this.spinner.start(`Starting`);
     }
 
     async start() {
         this.agentMgr = new AgentMgr(this.argv, this.wsk, this.actionName);
-        this.watcher = new Watcher(this.argv, this.wsk);
+        this.watcher = new Watcher(this.argv, this.wsk, this.spinner);
 
+        this.spinner.start(`Inspecting action`);
         // get the action metadata
         const actionMetadata = await this.agentMgr.peekAction();
         debug("fetched action metadata from openwhisk");
-
         this.wskProps.namespace = actionMetadata.namespace;
-        console.info(`Starting debugger for /${this.wskProps.namespace}/${this.actionName}`);
+
+        this.spinner.stop();
+        console.info(`Debugging /${this.wskProps.namespace}/${this.actionName}`);
 
         // local debug container
-        this.invoker = new OpenWhiskInvoker(this.actionName, actionMetadata, this.argv, this.wskProps, this.wsk);
+        this.invoker = new OpenWhiskInvoker(this.actionName, actionMetadata, this.argv, this.wskProps, this.wsk, this.spinner);
 
         try {
             // run build initially (would be required by starting container)
             if (this.argv.onBuild) {
+                this.spinner.stop();
                 console.info("=> Build:", this.argv.onBuild);
                 spawnSync(this.argv.onBuild, {shell: true, stdio: "inherit"});
             }
@@ -83,6 +94,7 @@ class Debugger {
             // task 1 - start local container
             const containerTask = (async () => {
                 const debugTask = debug.task();
+                this.spinner.start('Starting local container');
 
                 // start container - get it up fast for VSCode to connect within its 10 seconds timeout
                 await this.invoker.startContainer();
@@ -102,6 +114,8 @@ class Debugger {
             // wait for both tasks 1 & 2
             const results = await Promise.all([containerTask, openwhiskTask]);
             const actionWithCode = results[1];
+
+            this.spinner.start('Installing agent');
 
             // parallelize slower work using promises again
 
@@ -126,12 +140,15 @@ class Debugger {
             await Promise.all([initTask, agentTask]);
 
             if (this.argv.onStart) {
+                this.spinner.stop();
                 console.log("On start:", this.argv.onStart);
                 spawnSync(this.argv.onStart, {shell: true, stdio: "inherit"});
             }
 
             // start source watching (live reload) if requested
             await this.watcher.start();
+
+            this.spinner.stop();
 
             console.log();
             console.info(`Action     : /${this.wskProps.namespace}/${this.actionName}`);

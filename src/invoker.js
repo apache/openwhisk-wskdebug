@@ -55,7 +55,7 @@ function resolveValue(value, ...args) {
 }
 
 class OpenWhiskInvoker {
-    constructor(actionName, action, options, wskProps, wsk) {
+    constructor(actionName, action, options, wskProps, wsk, spinner) {
         this.actionName = actionName;
         this.action = action;
 
@@ -79,6 +79,8 @@ class OpenWhiskInvoker {
 
         this.wskProps = wskProps;
         this.wsk = wsk;
+
+        this.spinner = spinner;
 
         this.containerName = this.asContainerName(`wskdebug-${this.action.name}-${Date.now()}`);
     }
@@ -237,6 +239,7 @@ class OpenWhiskInvoker {
 
         this.containerRunning = true;
 
+        this.spinner.stop();
         spawn("docker", ["logs", "-t", "-f", this.name()], {
             stdio: [
                 "inherit", // stdin
