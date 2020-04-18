@@ -191,7 +191,6 @@ class Debugger {
     async _run() {
         try {
             this.running = true;
-            this.shuttingDown = false;
 
             // main blocking loop
             // abort if this.running is set to false
@@ -262,10 +261,15 @@ class Debugger {
 
     async shutdown() {
         // avoid duplicate shutdown on CTRL+C
-        if (this.shuttingDown) {
-            return;
+        if (!this.shutdownPromise) {
+            this.shutdownPromise = this._shutdown();
         }
-        this.shuttingDown = true;
+
+        await this.shutdownPromise;
+        delete this.shutdownPromise;
+    }
+
+    async _shutdown() {
         const shutdownStart = Date.now();
 
         // only log this if we started properly
