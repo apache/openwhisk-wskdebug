@@ -24,9 +24,17 @@ const Watcher = require('./watcher');
 const openwhisk = require('openwhisk');
 const { spawnSync } = require('child_process');
 const sleep = require('util').promisify(setTimeout);
-const debug = require('./debug');
 const prettyBytes = require('pretty-bytes');
 const prettyMilliseconds = require('pretty-ms');
+const log = require('./log');
+
+function prettyMBytes1024(mb) {
+    if (mb > 1024) {
+        return `${mb/1024} GB`;
+    } else {
+        return `${mb} MB`;
+    }
+}
 
 /**
  * Central component of wskdebug.
@@ -34,14 +42,14 @@ const prettyMilliseconds = require('pretty-ms');
 class Debugger {
     constructor(argv) {
         this.startTime = Date.now();
-        debug("starting debugger");
+        log.debug("starting debugger");
 
         this.argv = argv;
         this.actionName = argv.action;
 
         this.wskProps = wskprops.get();
         if (Object.keys(this.wskProps).length === 0) {
-            console.error(`Error: Missing openwhisk credentials. Found no ~/.wskprops file or WSK_* environment variable.`);
+            log.error(`Error: Missing openwhisk credentials. Found no ~/.wskprops file or WSK_* environment variable.`);
             process.exit(1);
         }
         if (argv.ignoreCerts) {
@@ -51,9 +59,12 @@ class Debugger {
         try {
             this.wsk = openwhisk(this.wskProps);
         } catch (err) {
-            console.error(`Error: Could not setup openwhisk client: ${err.message}`);
+            log.error(`Error: Could not setup openwhisk client: ${err.message}`);
             process.exit(1);
         }
+
+        const h = log.highlightColor;
+        log.spinner("Debugging " + h(`/_/${this.actionName}`) + " on " + h(this.wskProps.apihost));
     }
 
     async start() {
@@ -61,19 +72,20 @@ class Debugger {
         this.watcher = new Watcher(this.argv, this.wsk);
 
         // get the action metadata
-        const actionMetadata = await this.agentMgr.peekAction();
-        debug("fetched action metadata from openwhisk");
+        this.actionMetadata = await this.agentMgr.peekAction();
+        log.debug("fetched action metadata from openwhisk");
+        this.wskProps.namespace = this.actionMetadata.namespace;
 
-        this.wskProps.namespace = actionMetadata.namespace;
-        console.info(`Starting debugger for /${this.wskProps.namespace}/${this.actionName}`);
+        const h = log.highlightColor;
+        log.step("Debugging " + h(`/${this.wskProps.namespace}/${this.actionName}`) + " on " + h(this.wskProps.apihost));
 
         // local debug container
-        this.invoker = new OpenWhiskInvoker(this.actionName, actionMetadata, this.argv, this.wskProps, this.wsk);
+        this.invoker = new OpenWhiskInvoker(this.actionName, this.actionMetadata, this.argv, this.wskProps, this.wsk);
 
         try {
             // run build initially (would be required by starting container)
             if (this.argv.onBuild) {
-                console.info("=> Build:", this.argv.onBuild);
+                log.highlight("On build: ", this.argv.onBuild);
                 spawnSync(this.argv.onBuild, {shell: true, stdio: "inherit"});
             }
             await this.invoker.prepare();
@@ -82,20 +94,21 @@ class Debugger {
 
             // task 1 - start local container
             const containerTask = (async () => {
-                const debugTask = debug.task();
+                const debug2 = log.newDebug();
+                log.spinner('Starting local container');
 
                 // start container - get it up fast for VSCode to connect within its 10 seconds timeout
-                await this.invoker.startContainer();
+                await this.invoker.startContainer(debug2);
 
-                debugTask(`started container: ${this.invoker.name()}`);
+                debug2(`started container: ${this.invoker.name()}`);
             })();
 
             // task 2 - fetch action code from openwhisk
             const openwhiskTask = (async () => {
-                const debugTask = debug.task();
+                const debug2 = log.newDebug();
                 const actionWithCode = await this.agentMgr.readActionWithCode();
 
-                debugTask(`got action code (${prettyBytes(actionWithCode.exec.code.length)})`);
+                debug2(`downloaded action code (${prettyBytes(actionWithCode.exec.code.length)})`);
                 return actionWithCode;
             })();
 
@@ -103,51 +116,41 @@ class Debugger {
             const results = await Promise.all([containerTask, openwhiskTask]);
             const actionWithCode = results[1];
 
+            log.spinner('Installing agent');
+
             // parallelize slower work using promises again
 
             // task 3 - initialize local container with code
             const initTask = (async () => {
-                const debugTask = debug.task();
+                const debug2 = log.newDebug();
 
                 // /init local container
                 await this.invoker.init(actionWithCode);
 
-                debugTask("installed action on container");
+                debug2("installed action on container");
             })();
 
             // task 4 - install agent in openwhisk
             const agentTask = (async () => {
-                const debugTask = debug.task();
+                const debug2 = log.newDebug();
 
                 // setup agent in openwhisk
-                await this.agentMgr.installAgent(this.invoker, debugTask);
+                await this.agentMgr.installAgent(this.invoker, debug2);
             })();
 
             await Promise.all([initTask, agentTask]);
 
             if (this.argv.onStart) {
-                console.log("On start:", this.argv.onStart);
+                log.highlight("On start: ", this.argv.onStart);
                 spawnSync(this.argv.onStart, {shell: true, stdio: "inherit"});
             }
 
             // start source watching (live reload) if requested
             await this.watcher.start();
 
-            console.log();
-            console.info(`Action     : /${this.wskProps.namespace}/${this.actionName}`);
-            if (this.sourcePath) {
-                console.info(`Sources    : ${this.invoker.getSourcePath()}`);
-            }
-            console.info(`Image      : ${this.invoker.getImage()}`);
-            console.info(`OpenWhisk  : ${this.wskProps.apihost}`);
-            console.info(`Container  : ${this.invoker.name()}`);
-            console.info(`Debug type : ${this.invoker.getDebugKind()}`);
-            console.info(`Debug port : localhost:${this.invoker.getPort()}`);
-            if (this.argv.condition) {
-                console.info(`Condition  : ${this.argv.condition}`);
-            }
-            console.log();
-            console.info(`Ready for activations. Started in ${prettyMilliseconds(Date.now() - this.startTime)}. Use CTRL+C to exit`);
+            this.logDetails();
+            const abortMsg = log.isInteractive ? log.highlightColor(" Use CTRL+C to exit.") : "";
+            log.ready(`Ready for activations. Started in ${prettyMilliseconds(Date.now() - this.startTime)}.${abortMsg}`);
 
             this.ready = true;
 
@@ -157,6 +160,30 @@ class Debugger {
         }
     }
 
+    async logDetails() {
+        log.log();
+        log.highlight("Action     : ", `/${this.wskProps.namespace}/${this.actionName}`);
+        if (this.sourcePath) {
+            log.highlight("Sources    : ", `${this.invoker.getSourcePath()}`);
+        }
+        log.highlight("Image      : ", `${this.invoker.getImage()}`);
+        log.highlight("Container  : ", `${this.invoker.name()}`);
+        if (this.actionMetadata.limits) {
+            if (this.actionMetadata.limits.memory) {
+                log.highlight("Memory     : ", `${prettyMBytes1024(this.actionMetadata.limits.memory)}`);
+            }
+            if (this.actionMetadata.limits.timeout) {
+                log.highlight("Timeout    : ", `${prettyMilliseconds(this.actionMetadata.limits.timeout, {verbose:true})}`);
+            }
+        }
+        log.highlight("Debug type : ", `${this.invoker.getDebugKind()}`);
+        log.highlight("Debug port : ", `localhost:${this.invoker.getPort()}`);
+        if (this.argv.condition) {
+            log.highlight("Condition  : ", `${this.argv.condition}`);
+        }
+        log.log();
+    }
+
     async run() {
         return this.runPromise = this._run();
     }
@@ -164,7 +191,6 @@ class Debugger {
     async _run() {
         try {
             this.running = true;
-            this.shuttingDown = false;
 
             // main blocking loop
             // abort if this.running is set to false
@@ -186,6 +212,7 @@ class Debugger {
 
                     const id = activation.$activationId;
                     delete activation.$activationId;
+                    log.verbose("Parameters:", activation);
 
                     const startTime = Date.now();
 
@@ -234,18 +261,25 @@ class Debugger {
 
     async shutdown() {
         // avoid duplicate shutdown on CTRL+C
-        if (this.shuttingDown) {
-            return;
+        if (!this.shutdownPromise) {
+            this.shutdownPromise = this._shutdown();
         }
-        this.shuttingDown = true;
+
+        await this.shutdownPromise;
+        delete this.shutdownPromise;
+    }
+
+    async _shutdown() {
         const shutdownStart = Date.now();
-        debug("shutting down...");
 
         // only log this if we started properly
         if (this.ready) {
-            console.log();
-            console.log();
-            console.log("Shutting down...");
+            log.log();
+            log.log();
+            log.debug("shutting down...");
+            log.spinner("Shutting down");
+        } else {
+            log.debug("aborting start - shutting down ...");
         }
 
         // need to shutdown everything even if some fail, hence tryCatch() for each
@@ -255,23 +289,23 @@ class Debugger {
         }
         if (this.invoker) {
             await this.tryCatch(this.invoker.stop());
-            debug(`stopped container: ${this.invoker.name()}`);
+            log.debug(`stopped container: ${this.invoker.name()}`);
         }
         if (this.watcher) {
             await this.tryCatch(this.watcher.stop());
-            debug("stopped source file watching");
+            log.debug("stopped source file watching");
         }
 
         // only log this if we started properly
         if (this.ready) {
-            console.log(`Done (shutdown took ${prettyMilliseconds(Date.now() - shutdownStart)})`);
+            log.succeed(`Done. Shutdown in ${prettyMilliseconds(Date.now() - shutdownStart)}.`);
         }
         this.ready = false;
     }
 
     // ------------------------------------------------< utils >-----------------
 
-    async tryCatch(task, message="Error during shutdown:") {
+    async tryCatch(task) {
         try {
             if (typeof task === "function") {
                 task();
@@ -279,13 +313,7 @@ class Debugger {
                 await task;
             }
         } catch (e) {
-            console.log(e);
-            if (this.argv.verbose) {
-                console.error(message);
-                console.error(e);
-            } else {
-                console.error(message, e.message);
-            }
+            log.exception(e, "Error during shutdown:");
         }
     }
 

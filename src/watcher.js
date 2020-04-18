@@ -20,7 +20,7 @@
 const fs = require('fs-extra');
 const livereload = require('livereload');
 const { spawnSync } = require('child_process');
-const debug = require('./debug');
+const log = require('./log');
 
 class Watcher {
     constructor(argv, wsk) {
@@ -38,6 +38,8 @@ class Watcher {
              || this.argv.invokeParams
              || this.argv.invokeAction )
         ) {
+            log.spinner('Initializing source watching');
+
             this.liveReloadServer = livereload.createServer({
                 port: this.argv.livereloadPort,
                 noListen: !this.argv.livereload,
@@ -55,9 +57,7 @@ class Watcher {
                 try {
                     let result = [];
 
-                    if (argv.verbose) {
-                        console.log("File modified:", filepath);
-                    }
+                    log.verbose("File modified:", filepath);
 
                     // call original function if we are listening
                     if (argv.livereload) {
@@ -66,13 +66,13 @@ class Watcher {
 
                     // run build command before invoke triggers below
                     if (argv.onBuild) {
-                        console.info("=> Build:", argv.onBuild);
+                        log.highlight("On build: ", argv.onBuild);
                         spawnSync(argv.onBuild, {shell: true, stdio: "inherit"});
                     }
 
                     // run shell command
                     if (argv.onChange) {
-                        console.info("=> Run:", argv.onChange);
+                        log.highlight("On run: ", argv.onChange);
                         spawnSync(argv.onChange, {shell: true, stdio: "inherit"});
                     }
 
@@ -91,22 +91,22 @@ class Watcher {
                             name: action,
                             params: json
                         }).then(response => {
-                            console.info(`=> Invoked action ${action} with params ${argv.invokeParams}: ${response.activationId}`);
+                            log.step(`Invoked action ${action} with params ${argv.invokeParams}: ${response.activationId}`);
                         }).catch(err => {
-                            console.error("Error invoking action:", err);
+                            log.error("Error invoking action:", err);
                         });
                     }
 
                     return result;
                 } catch (e) {
-                    console.error(e);
+                    log.error(e);
                 }
             };
 
             if (this.argv.livereload) {
-                console.info(`LiveReload enabled for ${watch} on port ${this.liveReloadServer.config.port}`);
+                log.log(`LiveReload enabled for ${log.highlightColor(watch)} on port ${this.liveReloadServer.config.port}`);
             }
-            debug("started source file watching");
+            log.debug("started source file watching");
         }
     }
 

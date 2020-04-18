@@ -21,32 +21,7 @@ const yargs = require("yargs");
 const Debugger = require("./src/debugger");
 const path = require("path");
 const fs = require("fs");
-const debug = require('./src/debug');
-
-function enableConsoleColors() {
-    // colorful console.error() and co
-    let originalConsole = null;
-    if (!console._logToFile) {
-        originalConsole = {
-            log: console.log,
-            error: console.error,
-            info: console.info,
-            debug: console.debug
-        };
-        // overwrites console.log and co
-        require('manakin').global;
-    }
-    return originalConsole;
-}
-
-function resetConsoleColors(originalConsole) {
-    if (originalConsole) {
-        console.log = originalConsole.log;
-        console.error = originalConsole.error;
-        console.info = originalConsole.info;
-        console.debug = originalConsole.debug;
-    }
-}
+const log = require('./src/log');
 
 function getSupportedKinds() {
     const kinds = [];
@@ -216,6 +191,11 @@ function yargsOptions(yargs) {
         type: "boolean",
         describe: "Verbose output. Logs activation parameters and result"
     });
+    yargs.option("s", {
+        alias: "silent",
+        type: "boolean",
+        describe: "Silent. Only output logs from action container."
+    });
     yargs.version(require("./package.json").version);
 }
 
@@ -275,13 +255,9 @@ function normalizeArgs(argv) {
     }
 }
 
-function printErrorAndExit(err, argv) {
-    console.log();
-    if (argv.verbose) {
-        console.error(err);
-    } else {
-        console.error("Error:", err.message);
-    }
+function printErrorAndExit(err) {
+    log.log();
+    log.exception(err);
     process.exit(1);
 }
 
@@ -297,8 +273,8 @@ function registerExitHandler(dbg) {
 }
 
 async function wskdebug(args, isCommandLine=false) {
-    debug("wskdebug arguments:", args);
-    const originalConsole = enableConsoleColors();
+    log.debug("wskdebug arguments:", args);
+    log.enableConsoleColors();
 
     try {
         const parser = getYargsParser();
@@ -315,6 +291,9 @@ async function wskdebug(args, isCommandLine=false) {
             return;
         }
 
+        log.isVerbose = argv.verbose;
+        log.silent(argv.silent);
+
         try {
             const dbg = new Debugger(argv);
             if (isCommandLine) {
@@ -325,14 +304,14 @@ async function wskdebug(args, isCommandLine=false) {
 
         } catch (e) {
             if (isCommandLine) {
-                printErrorAndExit(e, argv);
+                printErrorAndExit(e);
             } else {
                 throw e;
             }
         }
 
     } finally {
-        resetConsoleColors(originalConsole);
+        log.resetConsoleColors();
     }
 }
 
