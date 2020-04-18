@@ -21,6 +21,7 @@ const { spawn, execSync } = require('child_process');
 const fetch = require('fetch-retry')(require('isomorphic-fetch'));
 const kinds = require('./kinds/kinds');
 const path = require('path');
+const log = require("./log");
 
 const RUNTIME_PORT = 8080;
 const INIT_RETRY_DELAY_MS = 100;
@@ -31,12 +32,11 @@ const OPENWHISK_DEFAULTS = {
     memory: 256
 };
 
-function execute(cmd, options, verbose) {
+function execute(cmd, options, debug2) {
     cmd = cmd.replace(/\s+/g, ' ');
-    if (verbose) {
-        console.log(cmd);
-    }
     const result = execSync(cmd, options);
+
+    (debug2 || log.debug)(`executed: ${cmd}`);
     if (result) {
         return result.toString().trim();
     } else {
@@ -55,7 +55,7 @@ function resolveValue(value, ...args) {
 }
 
 class OpenWhiskInvoker {
-    constructor(actionName, action, options, wskProps, wsk, spinner) {
+    constructor(actionName, action, options, wskProps, wsk) {
         this.actionName = actionName;
         this.action = action;
 
@@ -65,7 +65,6 @@ class OpenWhiskInvoker {
         this.internalPort = options.internalPort;
         this.command = options.command;
         this.dockerArgs = options.dockerArgs;
-        this.verbose = options.verbose;
 
         // the build path can be separate, if not, same as the source/watch path
         this.sourcePath = options.buildPath || options.sourcePath;
@@ -79,8 +78,6 @@ class OpenWhiskInvoker {
 
         this.wskProps = wskProps;
         this.wsk = wsk;
-
-        this.spinner = spinner;
 
         this.containerName = this.asContainerName(`wskdebug-${this.action.name}-${Date.now()}`);
     }
@@ -109,14 +106,12 @@ class OpenWhiskInvoker {
                 }
                 return runtimes[kind];
 
-            } else if (this.verbose) {
-                console.warn("Could not retrieve runtime images from OpenWhisk, using default image list.");
+            } else {
+                log.warn("Could not retrieve runtime images from OpenWhisk, using default image list.");
             }
 
         } catch (e) {
-            if (this.verbose) {
-                console.warn("Could not retrieve runtime images from OpenWhisk, using default image list.", e.message);
-            }
+            log.warn("Could not retrieve runtime images from OpenWhisk, using default image list.", e.message);
         }
         return kinds.images[kind];
     }
@@ -148,9 +143,7 @@ class OpenWhiskInvoker {
         try {
             this.debug = require(`${__dirname}/kinds/${this.debugKind}/${this.debugKind}`);
         } catch (e) {
-            if (this.verbose) {
-                console.error(`Cannot find debug info for kind ${this.debugKind}:`, e.message);
-            }
+            log.warn(`Cannot find debug info for kind ${this.debugKind}:`, e.message);
             this.debug = {};
         }
 
@@ -177,7 +170,7 @@ class OpenWhiskInvoker {
         // source mounting
         if (this.sourcePath) {
             if (!this.debug.mountAction) {
-                console.warn(`Warning: Sorry, mounting sources not yet supported for: ${kind}.`);
+                log.warn(`Warning: Sorry, mounting sources not yet supported for: ${kind}.`);
                 this.sourcePath = undefined;
             }
         }
@@ -190,8 +183,8 @@ class OpenWhiskInvoker {
         }
     }
 
-    async startContainer() {
-        let showDockerRunOutput = this.verbose;
+    async startContainer(debug2) {
+        let showDockerRunOutput = log.isVerbose;
 
         // quick fail for missing requirements such as docker not running
         await this.checkIfDockerAvailable();
@@ -201,7 +194,7 @@ class OpenWhiskInvoker {
         } catch (e) {
             // make sure the user can see the image download process as part of docker run
             showDockerRunOutput = true;
-            console.log(`
+            log.warn(`
 +------------------------------------------------------------------------------------------+
 | Docker image must be downloaded: ${this.image}
 |                                                                                          |
@@ -213,10 +206,6 @@ class OpenWhiskInvoker {
 | Alternatively set a higher 'timeout' in the launch configuration, such as 60000 (1 min). |
 +------------------------------------------------------------------------------------------+
 `);
-        }
-
-        if (this.verbose) {
-            console.log(`Starting local debug container ${this.name()}`);
         }
 
         execute(
@@ -234,12 +223,12 @@ class OpenWhiskInvoker {
             `,
             // live stream view for docker image download output
             { stdio: showDockerRunOutput ? "inherit" : null },
-            this.verbose
+            debug2
         );
 
         this.containerRunning = true;
 
-        this.spinner.stop();
+        log.stopSpinner();
         spawn("docker", ["logs", "-t", "-f", this.name()], {
             stdio: [
                 "inherit", // stdin
@@ -268,16 +257,9 @@ class OpenWhiskInvoker {
     async init(actionWithCode) {
         let action;
         if (this.sourceMountAction) {
-            if (this.verbose) {
-                console.log(`Mounting sources onto local debug container: ${this.sourcePath}`);
-            }
-
             action = this.sourceMountAction;
 
         } else {
-            if (this.verbose) {
-                console.log(`Pushing action code to local debug container: ${this.action.name}`);
-            }
             action = {
                 binary: actionWithCode.exec.binary,
                 main:   actionWithCode.exec.main || "main",
@@ -327,9 +309,6 @@ class OpenWhiskInvoker {
 
     async stop() {
         if (this.containerRunning) {
-            if (this.verbose) {
-                console.log("Stopping local debug container");
-            }
             execute(`docker kill ${this.name()}`);
         }
     }

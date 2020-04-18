@@ -23,6 +23,7 @@ const ngrok = require('ngrok');
 const url = require('url');
 const util = require('util');
 const crypto = require("crypto");
+const log = require('../log');
 
 class NgrokAgent {
     constructor(argv, invoker) {
@@ -31,9 +32,7 @@ class NgrokAgent {
     }
 
     async getAgent(action) {
-        if (this.argv.verbose) {
-            console.log("Setting up ngrok", this.argv.ngrokRegion ? `(region: ${this.argv.ngrokRegion})` : "");
-        }
+        log.verbose("Setting up ngrok", this.argv.ngrokRegion ? `(region: ${this.argv.ngrokRegion})` : "");
 
         // 1. start local server on random port
         this.ngrokServer = http.createServer(this.ngrokHandler.bind(this));
@@ -62,7 +61,9 @@ class NgrokAgent {
             value: this.ngrokAuth
         });
 
-        console.log(`Ngrok forwarding: ${ngrokUrl} => http://localhost:${this.ngrokServerPort} (auth: ${this.ngrokAuth})`);
+        const h = log.highlightColor;
+        log.step(`Ngrok forwarding: ${h(ngrokUrl)} => http://localhost:${h(this.ngrokServerPort)}`);
+        log.debug(`ngrok agent auth key: ${this.ngrokAuth}`)
 
         return fs.readFileSync(`${__dirname}/../../agent/agent-ngrok.js`, {encoding: 'utf8'});
     }
@@ -99,33 +100,28 @@ class NgrokAgent {
             req.on('end', async () => {
                 try {
                     const params = JSON.parse(body);
-                    const id = params.$activationId;
+                    const activationId = params.$activationId;
                     delete params.$activationId;
 
-                    if (this.argv.verbose) {
-                        console.log();
-                        console.info(`Activation: ${id}`);
-                        console.log(params);
-                    } else {
-                        console.info(`Activation: ${id}`);
-                    }
+                    log.verbose(); // because of the .....
+                    log.log();
+                    log.highlight("Activation: ", activationId);
+                    log.verbose("Parameters:", params);
 
                     const startTime = Date.now();
 
-                    const result = await this.invoker.run(params, id);
+                    const result = await this.invoker.run(params, activationId);
 
                     const duration = Date.now() - startTime;
-                    console.info(`Completed activation ${id} in ${duration/1000.0} sec`);
-                    if (this.argv.verbose) {
-                        console.log(result);
-                    }
+                    log.succeed(`Completed activation ${activationId} in ` + log.highlightColor(`${duration/1000.0} sec`));
+                    log.verbose("Result:", result);
 
                     res.statusCode = 200;
                     res.setHeader("Content-Type", "application/json");
                     res.end(JSON.stringify(result));
 
                 } catch (e) {
-                    console.error(e);
+                    log.error(e);
                     res.statusCode = 400;
                     res.end();
                 }

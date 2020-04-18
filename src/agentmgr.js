@@ -27,8 +27,8 @@ try {
 
 const fs = require('fs-extra');
 const sleep = require('util').promisify(setTimeout);
-const debug = require('./debug');
 const clone = require('clone');
+const log = require('./log');
 
 function getAnnotation(action, key) {
     const a = action.annotations.find(a => a.key === key);
@@ -78,7 +78,7 @@ async function deleteActionIfExists(wsk, name) {
     if (await actionExists(wsk, name)) {
         await wsk.actions.delete(name);
     }
-    debug(`restore: ensured removal of action ${name}`);
+    log.debug(`restore: ensured removal of action ${name}`);
 }
 
 
@@ -99,9 +99,6 @@ class AgentMgr {
      * Fast way to get just the action metadata
      */
     async peekAction() {
-        if (this.argv.verbose) {
-            console.log(`Getting action metadata from OpenWhisk: ${this.actionName}`);
-        }
         let action = await getWskActionWithoutCode(this.wsk, this.actionName);
         if (action === null) {
             throw new Error(`Action not found: ${this.actionName}`);
@@ -126,7 +123,7 @@ class AgentMgr {
                     throw new Error(`Dang! Agent is already installed and action backup is broken (${backupName}).\n\nPlease redeploy your action first before running wskdebug again.`);
 
                 } else {
-                    console.warn("Agent was already installed, but backup is still present. All good.");
+                    log.warn("Agent was already installed, but backup is still present. All good.");
 
                     // need to look at the original action
                     action = backup;
@@ -148,14 +145,10 @@ class AgentMgr {
     }
 
     async readActionWithCode() {
-        if (this.argv.verbose) {
-            console.log(`Fetching action code from OpenWhisk: ${this.actionName}`);
-        }
-
         // user can switch between agents (ngrok or not), hence we need to restore first
         // (better would be to track the agent + its version and avoid a restore, but that's TBD)
         if (this.agentInstalled) {
-            this.actionWithCode = await this.restoreAction();
+            this.actionWithCode = await this.restoreAction(true);
         } else {
             this.actionWithCode = await this.wsk.actions.get(this.actionName);
         }
@@ -167,7 +160,7 @@ class AgentMgr {
         return this.actionWithCode;
     }
 
-    async installAgent(invoker, debugTask) {
+    async installAgent(invoker, debug2) {
         this.agentInstalled = true;
 
         let agentName;
@@ -189,15 +182,17 @@ class AgentMgr {
             // agent using ngrok for forwarding
             agentName = "ngrok";
             agentCode = await this.ngrokAgent.getAgent(agentAction);
-            debugTask("started local ngrok proxy");
+            debug2("started local ngrok proxy");
 
         } else {
             if (this.argv.disableConcurrency) {
                 this.concurrency = false;
+
             } else {
                 this.concurrency = await this.openwhiskSupports("concurrency");
+                debug2(`fetched openwhisk /api/v1/api-docs to detect concurrency`);
                 if (!this.concurrency) {
-                    console.warn("This OpenWhisk does not support action concurrency. Debugging will be a bit slower. Consider using '--ngrok' which might be a faster option.");
+                    log.warn("This OpenWhisk does not support action concurrency. Debugging will be a bit slower. Consider using '--ngrok' which might be a faster option.");
                 }
             }
 
@@ -214,25 +209,17 @@ class AgentMgr {
 
         const backupName = getActionCopyName(this.actionName);
 
-        if (this.argv.verbose) {
-            console.log(`Installing agent in OpenWhisk (${agentName})...`);
-        }
-
         // create copy in case wskdebug gets killed hard
         // do async as this can be slow for larger actions and this is part of the critical startup path
         this.createBackup = (async () => {
-            const debugTask = debug.task();
+            const debug3 = log.newDebug();
 
             await this.wsk.actions.update({
                 name: backupName,
                 action: agentAction
             });
-            debugTask(`created action backup ${backupName}`);
+            debug3(`created action backup ${backupName}`);
         })();
-
-        if (this.argv.verbose) {
-            console.log(`Original action will be backed up at ${backupName}.`);
-        }
 
         if (this.argv.condition) {
             agentAction.parameters.push({
@@ -246,17 +233,13 @@ class AgentMgr {
         } catch (e) {
             // openwhisk does not support concurrent nodejs actions, try with another
             if (e.statusCode === 400 && e.error && typeof e.error.error === "string" && e.error.error.includes("concurrency")) {
-                console.log(`The Openwhisk server does not support concurrent actions, using alternative agent. Consider using --ngrok for a possibly faster agent.`);
+                log.log(`The Openwhisk server does not support concurrent actions, using alternative agent. Consider using --ngrok for a possibly faster agent.`);
                 this.concurrency = false;
                 agentCode = await this.getPollingActivationDbAgent();
                 await this.pushAgent(agentAction, agentCode, backupName);
             }
         }
-        debugTask(`installed agent '${agentName}' in place of ${this.actionName}`);
-
-        if (this.argv.verbose) {
-            console.log(`Agent installed.`);
-        }
+        debug2(`installed agent type '${agentName}' in place of action '${this.actionName}'`);
     }
 
     stop() {
@@ -276,7 +259,7 @@ class AgentMgr {
         } finally {
             if (this.ngrokAgent) {
                 await this.ngrokAgent.stop();
-                debug("ngrok shut down");
+                log.debug("ngrok shut down");
             }
         }
     }
@@ -302,9 +285,8 @@ class AgentMgr {
                         blocking: true
                     });
 
-                    if (this.argv.verbose) {
-                        process.stdout.write(".");
-                    }
+                    log.verboseWrite(".");
+
                 } else {
                     // poll for the newest activation
                     const since = Date.now();
@@ -339,18 +321,14 @@ class AgentMgr {
                             }
                         }
 
-                        if (this.argv.verbose) {
-                            process.stdout.write(".");
-                        }
+                        log.verboseWrite(".");
 
                         // need to limit load on openwhisk (activation list)
                         await sleep(1000);
                     }
                 }
 
-                if (this.argv.verbose) {
-                    process.stdout.write(".");
-                }
+                log.verboseWrite(".");
 
                 // check for successful response with a new activation
                 if (activation && activation.response) {
@@ -359,13 +337,9 @@ class AgentMgr {
                     // mark this as seen so we don't reinvoke it
                     this.activationsSeen[activation.activationId] = true;
 
-                    if (this.argv.verbose) {
-                        console.log();
-                        console.info(`Activation: ${params.$activationId}`);
-                        console.log(params);
-                    } else {
-                        console.info(`Activation: ${params.$activationId}`);
-                    }
+                    log.verbose(); // because of the .....
+                    log.log();
+                    log.highlight("Activation: ", params.$activationId);
                     return params;
 
                 } else if (activation && activation.activationId) {
@@ -377,7 +351,7 @@ class AgentMgr {
 
                 } else {
                     // unexpected, just log and retry
-                    console.log("Unexpected empty response while waiting for new activations:", activation);
+                    log.log("Unexpected empty response while waiting for new activations:", activation);
                 }
 
             } catch (e) {
@@ -385,30 +359,26 @@ class AgentMgr {
                 const errorCode = getActivationError(e).code;
                 if (errorCode === 42) {
                     // 42 => retry, do nothing here (except logging progress)
-                    if (this.argv.verbose) {
-                        process.stdout.write(".");
-                    }
+                    log.verboseWrite(".");
 
                 } else if (errorCode === 43) {
                     // 43 => graceful shutdown (for unit tests)
-                    console.log("Graceful shutdown requested by agent (only for unit tests)");
+                    log.log("Graceful shutdown requested by agent (only for unit tests)");
                     return null;
 
                 } else if (e.statusCode === 503 && !this.concurrency) {
                     // 503 => openwhisk activation DB likely overloaded with requests, warn, wait a bit and retry
 
-                    if (this.argv.verbose) {
-                        console.log("x");
-                    }
-                    console.warn("Server responded with 503 while looking for new activation records. Consider using --ngrok option.")
+                    log.verbose("x");
+                    log.warn("Server responded with 503 while looking for new activation records. Consider using --ngrok option.")
 
                     await sleep(5000);
 
                 } else {
                     // otherwise log error and abort
-                    console.error();
-                    console.error("Unexpected error while polling agent for activation:");
-                    console.dir(e, { depth: null });
+                    log.error();
+                    log.error("Unexpected error while polling agent for activation:");
+                    log.deepObject(e);
                     throw new Error("Unexpected error while polling agent for activation.");
                 }
             }
@@ -419,10 +389,8 @@ class AgentMgr {
     }
 
     async completeActivation(activationId, result, duration) {
-        console.info(`Completed activation ${activationId} in ${duration/1000.0} sec`);
-        if (this.argv.verbose) {
-            console.log(result);
-        }
+        log.succeed(`Completed activation ${activationId} in ` + log.highlightColor(`${duration/1000.0} sec`));
+        log.verbose("Result:", result);
 
         try {
             result.$activationId = activationId;
@@ -439,10 +407,10 @@ class AgentMgr {
                 // do nothing
             } else if (errorCode === 43) {
                 // 43 => graceful shutdown (for unit tests)
-                console.log("Graceful shutdown requested by agent (only for unit tests)");
+                log.log("Graceful shutdown requested by agent (only for unit tests)");
                 return false;
             } else {
-                console.error("Unexpected error while completing activation:", e);
+                log.error("Unexpected error while completing activation:", e);
             }
         }
         return true;
@@ -450,12 +418,7 @@ class AgentMgr {
 
     // --------------------------------------< restoring >------------------
 
-    async restoreAction() {
-        if (this.argv.verbose) {
-            console.log();
-            console.log(`Restoring action`);
-        }
-
+    async restoreAction(isStartup) {
         const copy = getActionCopyName(this.actionName);
 
         try {
@@ -470,7 +433,7 @@ class AgentMgr {
             } else {
                 // the original was fetched before or was backed up in the copy
                 original = await this.wsk.actions.get(copy)
-                debug("restore: fetched action original from backup copy");
+                log.debug("restore: fetched action original from backup copy");
             }
 
             // copy the backup (copy) to the regular action
@@ -478,31 +441,34 @@ class AgentMgr {
                 name: this.actionName,
                 action: original
             });
-            debug("restore: restored original action");
+            log.debug("restore: restored original action");
 
             if (this.argv.cleanup) {
-                console.log("Removing extra actions due to --cleanup...");
+                if (!isStartup) {
+                    log.log("Removing helper actions due to --cleanup...");
+                }
                 // remove the backup
                 await this.wsk.actions.delete(copy);
-                debug("restore: deleted backup copy");
+                log.debug("restore: deleted backup copy");
 
                 // remove any helpers if they exist
                 await deleteActionIfExists(this.wsk, `${this.actionName}_wskdebug_invoked`);
                 await deleteActionIfExists(this.wsk, `${this.actionName}_wskdebug_completed`);
 
-            } else {
-                console.warn(`Skipping removal of extra actions. Remove using --cleanup if desired:`);
-                console.warn(`- ${copy}`);
-                if (!this.concurrency) {
-                    console.warn(`- ${this.actionName}_wskdebug_invoked`);
-                    console.warn(`- ${this.actionName}_wskdebug_completed`);
+            } else if (!isStartup) {
+                log.log(`Following helper actions are not removed to make shutdown fast. Remove using --cleanup if desired.`);
+                log.log(`- ${log.highlightColor(copy)}`);
+                if (!this.concurrency && !this.ngrokAgent) {
+                    log.log("- " + log.highlightColor(`${this.actionName}_wskdebug_invoked`));
+                    log.log("- " + log.highlightColor(`${this.actionName}_wskdebug_completed`));
                 }
+                log.log();
             }
 
             return original;
 
         } catch (e) {
-            console.error("Error while restoring original action:", e);
+            log.error("Error while restoring original action:", e);
         }
     }
 
@@ -554,7 +520,7 @@ class AgentMgr {
                     { key: "wskdebug", value: true },
                     { key: "description", value: `wskdebug agent. temporarily installed over original action. original action backup at ${backupName}.` }
                 ],
-                parameters: action.parameters
+                parameters: action.parameters || []
             }
         });
     }
@@ -578,7 +544,7 @@ class AgentMgr {
                 ]
             }
         });
-        debug(`created helper action ${actionName}`);
+        log.debug(`created helper action ${actionName}`);
     }
 
     // ----------------------------------------< openwhisk feature detection >-----------------
@@ -593,7 +559,7 @@ class AgentMgr {
                     this.openwhiskVersion = null;
                 }
             } catch (e) {
-                console.warn("Could not retrieve OpenWhisk version:", e.message);
+                log.warn("Could not retrieve OpenWhisk version:", e.message);
                 this.openwhiskVersion = null;
             }
         }
@@ -615,7 +581,7 @@ class AgentMgr {
                         return swagger.definitions.ActionLimits.properties.concurrency;
                     }
                 } catch (e) {
-                    console.warn('Could not read /api/v1/api-docs, setting max action concurrency to 1')
+                    log.warn('Could not read /api/v1/api-docs, setting max action concurrency to 1')
                     return false;
                 }
             }

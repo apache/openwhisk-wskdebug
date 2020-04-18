@@ -20,7 +20,7 @@
     },
     "scripts": {
         "pretest": "npm install --no-save ngrok",
-        "test": "nyc mocha test/**/*.test.js && test/install/test-npm-install.sh",
+        "test": "WSKDEBUG_SILENT=1 nyc mocha test/**/*.test.js && test/install/test-npm-install.sh",
         "posttest": "eslint .",
         "report-coverage": "nyc report --reporter=json && codecov -f coverage/coverage-final.json"
     },
@@ -42,6 +42,7 @@
         "file": "test/logfile.setup.js"
     },
     "dependencies": {
+        "chalk": "^4.0.0",
         "clone": "^2.1.2",
         "debug": "^4.1.1",
         "fetch-retry": "^3.1.0",

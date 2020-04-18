@@ -42,9 +42,7 @@ function isDockerInstalled() {
 
 async function beforeEach() {
     process.env.WSK_CONFIG_FILE = path.join(process.cwd(), "test/wskprops");
-    // nock.recorder.rec({ enable_reqheaders_recording: true });
     openwhisk = nock(FAKE_OPENWHISK_SERVER);
-    // openwhisk.log(console.log);
     mockOpenwhiskSwagger(openwhisk);
 
     // save current working dir
