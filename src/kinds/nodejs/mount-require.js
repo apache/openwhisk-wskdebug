@@ -26,24 +26,34 @@ const mainFn = "$$main$$";
 // name of module file (for helpful errors)
 const sourceFile = "$$sourceFile$$";
 
-// load and validate on /init for quick feedback
-try {
-    require(path);
-} catch (e) {
-    throw `Cannot load module '${sourceFile}': ${e}`;
-}
-if (typeof require(path)[mainFn] !== "function") {
-    throw `'${mainFn}' is not a function in '${sourceFile}'. Specify the right function in wskdebug using --main.`;
-}
-
 function clearEntireRequireCache() {
     Object.keys(require.cache).forEach(function(key) {
         delete require.cache[key];
     });
 }
 
+let firstRun = true;
+
 // eslint-disable-next-line no-unused-vars
 function main(args) { // lgtm [js/unused-local-variable]
+
+    if (firstRun) {
+        const start = Date.now();
+        console.log(`[wskdebug] loading action sources from ${sourceFile}`);
+        // validation with better error messages
+        try {
+            require(path);
+        } catch (e) {
+            throw `Cannot load module '${sourceFile}': ${e}`;
+        }
+
+        if (typeof require(path)[mainFn] !== "function") {
+            throw `'${mainFn}' is not a function in '${sourceFile}'. Specify the right function in wskdebug using --main.`;
+        }
+        firstRun = false;
+        console.log(`[wskdebug] loaded in ${Date.now() - start} ms.`);
+    }
+
     // force reload of entire mounted action on every invocation
     clearEntireRequireCache();
 
