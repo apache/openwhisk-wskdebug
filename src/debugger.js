@@ -287,11 +287,19 @@ class Debugger {
         if (this.agentMgr) {
             await this.tryCatch(this.agentMgr.shutdown());
         }
+
+        // ------------< critical removal must happen above this line >---------------
+
+        // in VS Code, we will not run beyond this line upon debug stop.
+        // this is because invoker.stop() will kill the container & thus close the
+        // debug port, upon which VS Code kills the debug process (us)
         if (this.invoker) {
             await this.tryCatch(this.invoker.stop());
-            log.debug(`stopped container: ${this.invoker.name()}`);
         }
+
         if (this.watcher) {
+            // this is not critical on a process exit, only if Debugger is used programmatically
+            // and might be reused for a new run()
             await this.tryCatch(this.watcher.stop());
             log.debug("stopped source file watching");
         }

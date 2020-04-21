@@ -117,6 +117,12 @@ module.exports = {
         }
     },
 
+    verboseStep: function(...args) {
+        if (this.isVerbose) {
+            this.step(...args);
+        }
+    },
+
     verboseWrite: function(text) {
         if (this.isVerbose) {
             process.stdout.write(text);
