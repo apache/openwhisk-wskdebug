@@ -22,6 +22,7 @@ const fetch = require('fetch-retry')(require('isomorphic-fetch'));
 const kinds = require('./kinds/kinds');
 const path = require('path');
 const log = require("./log");
+const Docker = require('dockerode');
 
 const RUNTIME_PORT = 8080;
 const INIT_RETRY_DELAY_MS = 100;
@@ -32,11 +33,13 @@ const OPENWHISK_DEFAULTS = {
     memory: 256
 };
 
-function execute(cmd, options, debug2) {
+function execute(cmd, options) {
     cmd = cmd.replace(/\s+/g, ' ');
+
+    log.verboseStep(`${cmd}`)
+
     const result = execSync(cmd, options);
 
-    (debug2 || log.debug)(`executed: ${cmd}`);
     if (result) {
         return result.toString().trim();
     } else {
@@ -51,6 +54,39 @@ function resolveValue(value, ...args) {
         return value(...args);
     } else {
         return value;
+    }
+}
+
+function asContainerName(name) {
+    // docker container names are restricted to [a-zA-Z0-9][a-zA-Z0-9_.-]*
+
+    // 1. replace special characters with dash
+    name = name.replace(/[^a-zA-Z0-9_.-]+/g, '-');
+    // 2. leading character is more limited
+    name = name.replace(/^[^a-zA-Z0-9]+/g, '');
+    // 3. (nice to have) remove trailing special chars
+    name = name.replace(/[^a-zA-Z0-9]+$/g, '');
+
+    return name;
+}
+
+function addressForContainerPort(containerInfo, port) {
+    if (containerInfo && containerInfo.NetworkSettings && containerInfo.NetworkSettings.Ports) {
+        const ports = containerInfo.NetworkSettings.Ports;
+        // example:
+        // Ports {
+        //   '8080/tcp': [ { HostIp: '0.0.0.0', HostPort: '32812' } ],
+        //   '9229/tcp': [ { HostIp: '0.0.0.0', HostPort: '9229' } ]
+        // }
+        const portEntry = ports[`${port}/tcp`];
+        if (portEntry && Array.isArray(portEntry) && portEntry.length >= 1) {
+            const address = portEntry[0];
+            return `${address.HostIp}:${address.HostPort}`;
+        } else {
+            return null;
+        }
+    } else {
+        return null;
     }
 }
 
@@ -79,12 +115,14 @@ class OpenWhiskInvoker {
         this.wskProps = wskProps;
         this.wsk = wsk;
 
-        this.containerName = this.asContainerName(`wskdebug-${this.action.name}-${Date.now()}`);
+        this.containerName = asContainerName(`wskdebug-${this.action.name}-${Date.now()}`);
+        this.docker = new Docker();
     }
 
     async checkIfDockerAvailable() {
         try {
-            execute("docker info", {stdio: 'ignore'});
+            await this.docker.info();
+            log.debug("docker - availability check")
         } catch (e) {
             throw new Error("Docker not running on local system. A local docker environment is required for the debugger.")
         }
@@ -190,8 +228,10 @@ class OpenWhiskInvoker {
         await this.checkIfDockerAvailable();
 
         try {
-            execute(`docker inspect --type=image ${this.image} 2> /dev/null`);
+            await this.docker.getImage(this.image).inspect();
+            debug2(`docker - image inspected, is present: ${this.image}`)
         } catch (e) {
+            debug2(`docker - image inspected, not found: ${this.image}`)
             // make sure the user can see the image download process as part of docker run
             showDockerRunOutput = true;
             log.warn(`
@@ -208,10 +248,42 @@ class OpenWhiskInvoker {
 `);
         }
 
+        // console.log(this.debug.command);
+        // console.log(this.debug.command.split(" "));
+
+        // TODO: switch docker run to dockerode.run()
+        //       - find the minimal HostConfig that works for the below run options
+        //         https://docs.docker.com/engine/api/v1.37/#operation/ContainerCreate
+        //         https://github.com/apocas/dockerode/issues/257
+        //         https://github.com/apocas/dockerode/blob/master/lib/docker.js#L1442
+        //         https://medium.com/@johnnyeric/how-to-reproduce-command-docker-run-via-docker-remote-api-with-node-js-5918d7b221ea
+        //       - kinds/nodejs.js has to switch from docker args to HostConfig map for -e and -v
+        //       - --docker-args (this.dockerArgsFromUser) must be parsed and turned into HostConfig
+        //       - replaces docker logs call as well, using streams to pass and write into sdtout/err
+        //         - allows to intercept logging using our log.log() & log.error() calls (?)
+        //         - also must use global.mochaLogFile
+        //        - no stdin needed
+        //        - returns dockerode container object (store as this.container)
+        //        - call this.container.kill() on it to get rid of it (already done in stop())
+
+        // await this.docker.run(
+        //     this.image,
+        //     [ 'sh', '-c', ...this.debug.command.split(" ") ],
+        //     showDockerRunOutput ? [process.stdout] : [],
+        //     {
+        //         HostConfig: {
+        //             AutoRemove: true,
+        //             PortBindings: {
+        //                 [`${RUNTIME_PORT}/tcp`]: [{ HostPort: RUNTIME_PORT }]
+        //             }
+        //         }
+        //     }
+        // );
+        // log.debug("docker - run");
         execute(
             `docker run
                 -d
-                --name ${this.name()}
+                --name ${this.containerName}
                 --rm
                 -m ${this.memory}
                 -p ${RUNTIME_PORT}
@@ -222,11 +294,16 @@ class OpenWhiskInvoker {
                 ${this.debug.command}
             `,
             // live stream view for docker image download output
-            { stdio: showDockerRunOutput ? "inherit" : null },
-            debug2
+            { stdio: showDockerRunOutput ? "inherit" : null }
         );
+        debug2(`docker - started container ${this.containerName}`);
 
-        this.containerRunning = true;
+        this.container = this.docker.getContainer(this.containerName);
+
+        // ask docker for the exposed IP and port of the RUNTIME_PORT on the container
+        const containerInfo = await this.container.inspect();
+        debug2(`docker - retrieved container metadata`);
+        this.containerURL = `http://${addressForContainerPort(containerInfo, RUNTIME_PORT)}`;
 
         log.stopSpinner();
         spawn("docker", ["logs", "-t", "-f", this.name()], {
@@ -236,6 +313,7 @@ class OpenWhiskInvoker {
                 global.mochaLogFile || "inherit"  // stderr
             ]
         });
+        log.debug(`docker - trailing logs`);
     }
 
     getSourcePath() {
@@ -308,39 +386,26 @@ class OpenWhiskInvoker {
     }
 
     async stop() {
-        if (this.containerRunning) {
-            execute(`docker kill ${this.name()}`);
+        if (this.container) {
+            // log this here for VS Code, will be the last visible log message since
+            // we will be killed by VS code after the container is gone after the kill()
+            log.log(`Stopping container ${this.name()}.`);
+            await this.container.kill();
+            delete this.container;
+            log.debug(`docker - stopped container ${this.name()}`);
         }
     }
 
     name() {
-        return this.containerName;
+        return this.container ? this.container.id : "";
     }
 
     url() {
-        if (!this.containerURL) {
-            // ask docker for the exposed IP and port of the RUNTIME_PORT on the container
-            const host = execute(`docker port ${this.name()} ${RUNTIME_PORT}`);
-            this.containerURL = `http://${host}`;
-        }
-        return this.containerURL;
+        return this.containerURL || "";
     }
 
     timeout() {
         return this.action.limits.timeout || OPENWHISK_DEFAULTS.timeout;
-    }
-
-    asContainerName(name) {
-        // docker container names are restricted to [a-zA-Z0-9][a-zA-Z0-9_.-]*
-
-        // 1. replace special characters with dash
-        name = name.replace(/[^a-zA-Z0-9_.-]+/g, '-');
-        // 2. leading character is more limited
-        name = name.replace(/^[^a-zA-Z0-9]+/g, '');
-        // 3. (nice to have) remove trailing special chars
-        name = name.replace(/[^a-zA-Z0-9]+$/g, '');
-
-        return name;
     }
 }
 
