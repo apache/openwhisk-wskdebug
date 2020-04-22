@@ -185,16 +185,7 @@ class AgentMgr {
             debug2("started local ngrok proxy");
 
         } else {
-            if (this.argv.disableConcurrency) {
-                this.concurrency = false;
-
-            } else {
-                this.concurrency = await this.openwhiskSupports("concurrency");
-                debug2(`fetched openwhisk /api/v1/api-docs to detect concurrency`);
-                if (!this.concurrency) {
-                    log.warn("This OpenWhisk does not support action concurrency. Debugging will be a bit slower. Consider using '--ngrok' which might be a faster option.");
-                }
-            }
+            this.concurrency = !this.argv.disableConcurrency;
 
             if (this.concurrency) {
                 // normal fast agent using concurrent node.js actions
@@ -572,19 +563,19 @@ class AgentMgr {
             activationListFilterOnlyBasename: v => v.startsWith("2018") || v.startsWith("2017"),
             // hack
             nodejs8: v => !v.startsWith("2018") && !v.startsWith("2017"),
-            concurrency: async (_, wsk) => {
-                // check swagger api docs instead of version to see if concurrency is supported
-                try {
-                    const swagger = await wsk.actions.client.request("GET", "/api/v1/api-docs");
+            // concurrency: async (_, wsk) => {
+            //     // check swagger api docs instead of version to see if concurrency is supported
+            //     try {
+            //         const swagger = await wsk.actions.client.request("GET", "/api/v1/api-docs");
 
-                    if (swagger && swagger.definitions && swagger.definitions.ActionLimits && swagger.definitions.ActionLimits.properties) {
-                        return swagger.definitions.ActionLimits.properties.concurrency;
-                    }
-                } catch (e) {
-                    log.warn('Could not read /api/v1/api-docs, setting max action concurrency to 1')
-                    return false;
-                }
-            }
+            //         if (swagger && swagger.definitions && swagger.definitions.ActionLimits && swagger.definitions.ActionLimits.properties) {
+            //             return swagger.definitions.ActionLimits.properties.concurrency;
+            //         }
+            //     } catch (e) {
+            //         log.warn('Could not read /api/v1/api-docs, setting max action concurrency to 1')
+            //         return false;
+            //     }
+            // }
         };
         const checker = FEATURES[feature];
         if (checker) {
