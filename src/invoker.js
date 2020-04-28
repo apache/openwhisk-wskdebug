@@ -301,7 +301,6 @@ class OpenWhiskInvoker {
             this.debug.updateContainerConfig(this, createContainerConfig);
         }
 
-        // dockerUtils.dockerRunArgs2CreateContainerConfig(this.dockerArgsFromKind, createContainerConfig);
         dockerUtils.dockerRunArgs2CreateContainerConfig(this.dockerArgsFromUser, createContainerConfig);
 
         debug("docker - creating container:", createContainerConfig);
