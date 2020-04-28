@@ -82,6 +82,9 @@ class Debugger {
         // local debug container
         this.invoker = new OpenWhiskInvoker(this.actionName, this.actionMetadata, this.argv, this.wskProps, this.wsk);
 
+        // quick fail for missing requirements such as docker not running
+        await this.invoker.checkIfDockerAvailable();
+
         try {
             // run build initially (would be required by starting container)
             if (this.argv.onBuild) {
@@ -95,7 +98,6 @@ class Debugger {
             // task 1 - start local container
             const containerTask = (async () => {
                 const debug2 = log.newDebug();
-                log.spinner('Starting local container');
 
                 // start container - get it up fast for VSCode to connect within its 10 seconds timeout
                 await this.invoker.startContainer(debug2);
@@ -277,10 +279,10 @@ class Debugger {
             log.log();
             log.log();
             log.debug("shutting down...");
-            log.spinner("Shutting down");
         } else {
             log.debug("aborting start - shutting down ...");
         }
+        log.spinner("Shutting down");
 
         // need to shutdown everything even if some fail, hence tryCatch() for each
 

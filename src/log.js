@@ -167,6 +167,12 @@ module.exports = {
         spinner.stop();
     },
 
+    resumeSpinner: function() {
+        if (spinner.text) {
+            this.spinner(spinner.text);
+        }
+    },
+
     /** Finish any running spinner and show a log message with a success symbol in front. */
     succeed: function(text) {
         spinner.stopAndPersist({

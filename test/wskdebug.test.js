@@ -23,6 +23,7 @@
 // tests basic cli
 
 let wskdebug = require('../index');
+const dockerUtils = require('../src/dockerutils');
 
 const test = require('./test');
 const assert = require('assert');
@@ -111,4 +112,26 @@ describe('wskdebug cli', function() {
         await wskdebug(`package/action`);
         assert.strictEqual(argv.action, "package/action");
     });
+
+    it("should parse docker args", function() {
+        const args = " -e foo=bar -v /some/path:/mount/path -v /another:/path";
+
+        const containerConfig = {
+            Cmd: [],
+            Env: [],
+            Volumes: {},
+            HostConfig: {
+                Binds: [],
+                ExposedPorts: {},
+                PortBindings: {}
+            }
+        };
+        dockerUtils.dockerRunArgs2CreateContainerConfig(args, containerConfig);
+
+        console.log(containerConfig);
+
+        assert.strictEqual(containerConfig.Env[0], "foo=bar");
+        assert.strictEqual(containerConfig.HostConfig.Binds[0], "/some/path:/mount/path");
+        assert.strictEqual(containerConfig.HostConfig.Binds[1], "/another:/path");
+    })
 });

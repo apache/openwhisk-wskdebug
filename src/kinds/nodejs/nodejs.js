@@ -34,25 +34,22 @@ module.exports = {
         return `node --expose-gc --inspect=0.0.0.0:${invoker.debug.internalPort} app.js`
     },
 
-    // return extra docker arguments such as mounting the source path
-    dockerArgs: function(invoker) {
-        let args = "";
+    // set extra docker container settings such as mounting the source path
+    updateContainerConfig: function(invoker, containerConfig) {
         if (invoker.sourceDir) {
             if (!invoker.sourceFile) {
                 throw new Error(`[source-path] or --build-path must point to a source file, it cannot be a folder: '${invoker.sourcePath}'`);
             }
 
-            args += ` -v "${invoker.sourceDir}:${CODE_MOUNT}"`;
+            containerConfig.HostConfig.Binds.push(`${invoker.sourceDir}:${CODE_MOUNT}`);
         }
 
         if (process.env.WSK_NODE_DEBUG) {
-            args += ` -e NODE_DEBUG='${process.env.WSK_NODE_DEBUG}'`;
+            containerConfig.Env.push(`NODE_DEBUG=${process.env.WSK_NODE_DEBUG}`);
         }
         if (process.env.DEBUG) {
-            args += ` -e DEBUG='${process.env.DEBUG}'`;
+            containerConfig.Env.push(`DEBUG=${process.env.DEBUG}`);
         }
-
-        return args;
     },
 
     // return action for /init that mounts the sources specified by invoker.sourcePath

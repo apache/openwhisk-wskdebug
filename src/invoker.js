@@ -17,35 +17,24 @@
 
 'use strict';
 
-const { spawn, execSync } = require('child_process');
 const fetch = require('fetch-retry')(require('isomorphic-fetch'));
 const kinds = require('./kinds/kinds');
 const path = require('path');
 const log = require("./log");
 const Docker = require('dockerode');
+const getPort = require('get-port');
+const dockerUtils = require('./dockerutils');
+const prettyBytes = require('pretty-bytes');
 
 const RUNTIME_PORT = 8080;
-const INIT_RETRY_DELAY_MS = 100;
+const MAX_INIT_RETRY_MS = 20000; // 20 sec
+const INIT_RETRY_DELAY_MS = 200;
 
 // https://github.com/apache/incubator-openwhisk/blob/master/docs/reference.md#system-limits
 const OPENWHISK_DEFAULTS = {
     timeout: 60*1000,
     memory: 256
 };
-
-function execute(cmd, options) {
-    cmd = cmd.replace(/\s+/g, ' ');
-
-    log.verboseStep(`${cmd}`)
-
-    const result = execSync(cmd, options);
-
-    if (result) {
-        return result.toString().trim();
-    } else {
-        return '';
-    }
-}
 
 // if value is a function, invoke it with args, otherwise return it as object
 // if value is undefined, will return undefined
@@ -54,39 +43,6 @@ function resolveValue(value, ...args) {
         return value(...args);
     } else {
         return value;
-    }
-}
-
-function asContainerName(name) {
-    // docker container names are restricted to [a-zA-Z0-9][a-zA-Z0-9_.-]*
-
-    // 1. replace special characters with dash
-    name = name.replace(/[^a-zA-Z0-9_.-]+/g, '-');
-    // 2. leading character is more limited
-    name = name.replace(/^[^a-zA-Z0-9]+/g, '');
-    // 3. (nice to have) remove trailing special chars
-    name = name.replace(/[^a-zA-Z0-9]+$/g, '');
-
-    return name;
-}
-
-function addressForContainerPort(containerInfo, port) {
-    if (containerInfo && containerInfo.NetworkSettings && containerInfo.NetworkSettings.Ports) {
-        const ports = containerInfo.NetworkSettings.Ports;
-        // example:
-        // Ports {
-        //   '8080/tcp': [ { HostIp: '0.0.0.0', HostPort: '32812' } ],
-        //   '9229/tcp': [ { HostIp: '0.0.0.0', HostPort: '9229' } ]
-        // }
-        const portEntry = ports[`${port}/tcp`];
-        if (portEntry && Array.isArray(portEntry) && portEntry.length >= 1) {
-            const address = portEntry[0];
-            return `${address.HostIp}:${address.HostPort}`;
-        } else {
-            return null;
-        }
-    } else {
-        return null;
     }
 }
 
@@ -115,13 +71,13 @@ class OpenWhiskInvoker {
         this.wskProps = wskProps;
         this.wsk = wsk;
 
-        this.containerName = asContainerName(`wskdebug-${this.action.name}-${Date.now()}`);
+        this.containerName = dockerUtils.safeContainerName(`wskdebug-${this.action.name}-${Date.now()}`);
         this.docker = new Docker();
     }
 
     async checkIfDockerAvailable() {
         try {
-            await this.docker.info();
+            await this.docker.ping();
             log.debug("docker - availability check")
         } catch (e) {
             throw new Error("Docker not running on local system. A local docker environment is required for the debugger.")
@@ -221,22 +177,72 @@ class OpenWhiskInvoker {
         }
     }
 
-    async startContainer(debug2) {
-        let showDockerRunOutput = log.isVerbose;
-
-        // quick fail for missing requirements such as docker not running
-        await this.checkIfDockerAvailable();
-
+    async isImagePresent(image, debug) {
         try {
-            await this.docker.getImage(this.image).inspect();
-            debug2(`docker - image inspected, is present: ${this.image}`)
+            await this.docker.getImage(image).inspect();
+            debug(`docker - image inspected, is present: ${image}`);
+            return true;
         } catch (e) {
-            debug2(`docker - image inspected, not found: ${this.image}`)
-            // make sure the user can see the image download process as part of docker run
-            showDockerRunOutput = true;
-            log.warn(`
+            debug(`docker - image inspected, not found: ${image}`);
+            return false;
+        }
+    }
+
+    async pull(image) {
+        await new Promise((resolve, reject) => {
+            this.docker.pull(image, (err, stream) => {
+                // streaming output from pull...
+                if (err) {
+                    return reject(err);
+                }
+
+                function onFinished(err, output) {
+                    if (err) {
+                        return reject(err);
+                    }
+                    return resolve(output);
+                }
+
+                const events = {};
+                function onProgress(event) {
+                    if (!event.progress) {
+                        return;
+                    }
+
+                    if (event.status) {
+                        events[event.status] = events[event.status] || {};
+                        if (event.id) {
+                            events[event.status][event.id] = event;
+                        }
+                    }
+                    const progressMsg = Object.entries(events).reduce((result, [status, events], idx) => {
+                        const progress = Object.values(events).reduce((sum, e) => {
+                            if (e.progressDetail && e.progressDetail.current && e.progressDetail.total) {
+                                sum.current += e.progressDetail.current;
+                                sum.total   += e.progressDetail.total;
+                            }
+                            return sum;
+                        }, { current: 0, total: 0 });
+
+                        return result + `${idx > 0 ? ", " : ""}${status}: ${prettyBytes(progress.current)} of ${prettyBytes(progress.total)}`;
+                    }, "");
+
+                    log.spinner(`Pulling docker image ${image} (${progressMsg})`);
+                }
+
+                this.docker.modem.followProgress(stream, onFinished, onProgress);
+            });
+        });
+    }
+
+    async startContainer(debug) {
+        if (!await this.isImagePresent(this.image, debug)) {
+            // show after 8 seconds, as VS code will timeout after 10 secs by default,
+            // so that the user can see it after all the "docker pull" progress output
+            setTimeout(() => {
+                log.warn(`
 +------------------------------------------------------------------------------------------+
-| Docker image must be downloaded: ${this.image}
+| Docker image being downloaded: ${this.image}
 |                                                                                          |
 | Note: If you debug in VS Code and it fails with "Cannot connect to runtime process"      |
 | due to a timeout, run this command once:                                                 |
@@ -246,74 +252,85 @@ class OpenWhiskInvoker {
 | Alternatively set a higher 'timeout' in the launch configuration, such as 60000 (1 min). |
 +------------------------------------------------------------------------------------------+
 `);
+            }, 8000);
+
+            debug(`Pulling ${this.image}`)
+            log.spinner(`Pulling ${this.image}...`);
+
+            await this.pull(this.image);
+
+            debug("Pull complete");
         }
 
-        // console.log(this.debug.command);
-        // console.log(this.debug.command.split(" "));
+        log.spinner('Starting container');
 
-        // TODO: switch docker run to dockerode.run()
-        //       - find the minimal HostConfig that works for the below run options
-        //         https://docs.docker.com/engine/api/v1.37/#operation/ContainerCreate
-        //         https://github.com/apocas/dockerode/issues/257
-        //         https://github.com/apocas/dockerode/blob/master/lib/docker.js#L1442
-        //         https://medium.com/@johnnyeric/how-to-reproduce-command-docker-run-via-docker-remote-api-with-node-js-5918d7b221ea
-        //       - kinds/nodejs.js has to switch from docker args to HostConfig map for -e and -v
-        //       - --docker-args (this.dockerArgsFromUser) must be parsed and turned into HostConfig
-        //       - replaces docker logs call as well, using streams to pass and write into sdtout/err
-        //         - allows to intercept logging using our log.log() & log.error() calls (?)
-        //         - also must use global.mochaLogFile
-        //        - no stdin needed
-        //        - returns dockerode container object (store as this.container)
-        //        - call this.container.kill() on it to get rid of it (already done in stop())
+        // links for docker create container config:
+        //   docker api: https://docs.docker.com/engine/api/v1.37/#operation/ContainerCreate
+        //   docker run impl: https://github.com/docker/cli/blob/2c3797015f5e7ef4502235b638d161279c471a8d/cli/command/container/run.go#L33
+        //   https://github.com/apocas/dockerode/issues/257
+        //   https://github.com/apocas/dockerode/blob/master/lib/docker.js#L1442
+        //   https://medium.com/@johnnyeric/how-to-reproduce-command-docker-run-via-docker-remote-api-with-node-js-5918d7b221ea
 
-        // await this.docker.run(
-        //     this.image,
-        //     [ 'sh', '-c', ...this.debug.command.split(" ") ],
-        //     showDockerRunOutput ? [process.stdout] : [],
-        //     {
-        //         HostConfig: {
-        //             AutoRemove: true,
-        //             PortBindings: {
-        //                 [`${RUNTIME_PORT}/tcp`]: [{ HostPort: RUNTIME_PORT }]
-        //             }
-        //         }
-        //     }
-        // );
-        // log.debug("docker - run");
-        execute(
-            `docker run
-                -d
-                --name ${this.containerName}
-                --rm
-                -m ${this.memory}
-                -p ${RUNTIME_PORT}
-                -p ${this.debug.port}:${this.debug.internalPort}
-                ${this.dockerArgsFromKind}
-                ${this.dockerArgsFromUser}
-                ${this.image}
-                ${this.debug.command}
-            `,
-            // live stream view for docker image download output
-            { stdio: showDockerRunOutput ? "inherit" : null }
-        );
-        debug2(`docker - started container ${this.containerName}`);
+        const containerRuntimePort = `${RUNTIME_PORT}/tcp`;
+        const hostRuntimePort = await getPort();
+        this.containerURL = `http://0.0.0.0:${hostRuntimePort}`;
+        const containerDebugPort = `${this.debug.internalPort}/tcp`;
 
-        this.container = this.docker.getContainer(this.containerName);
+        const createContainerConfig = {
+            name: this.containerName,
+            Image: this.image,
+            Cmd: [ 'sh', '-c', this.debug.command ],
+            Env: [],
+            Volumes: {},
+            ExposedPorts: {
+                [containerRuntimePort]: {},
+                [containerDebugPort]: {}
+            },
+            HostConfig: {
+                AutoRemove: true,
+                PortBindings: {
+                    [containerRuntimePort]: [{ HostPort: `${hostRuntimePort}` }],
+                    [containerDebugPort]: [{ HostPort: `${this.debug.port}` }]
+                },
+                Memory: this.memory,
+                Binds: []
+            }
+        };
 
-        // ask docker for the exposed IP and port of the RUNTIME_PORT on the container
-        const containerInfo = await this.container.inspect();
-        debug2(`docker - retrieved container metadata`);
-        this.containerURL = `http://${addressForContainerPort(containerInfo, RUNTIME_PORT)}`;
+        if (this.debug.updateContainerConfig) {
+            this.debug.updateContainerConfig(this, createContainerConfig);
+        }
 
-        log.stopSpinner();
-        spawn("docker", ["logs", "-t", "-f", this.name()], {
-            stdio: [
-                "inherit", // stdin
-                global.mochaLogFile || "inherit", // stdout
-                global.mochaLogFile || "inherit"  // stderr
-            ]
+        // dockerUtils.dockerRunArgs2CreateContainerConfig(this.dockerArgsFromKind, createContainerConfig);
+        dockerUtils.dockerRunArgs2CreateContainerConfig(this.dockerArgsFromUser, createContainerConfig);
+
+        debug("docker - creating container:", createContainerConfig);
+
+        this.container = await this.docker.createContainer(createContainerConfig);
+
+        const stream = await this.container.attach({
+            stream: true,
+            stdout: true,
+            stderr: true
         });
-        log.debug(`docker - trailing logs`);
+
+        const spinnerSafeStream = (stream) => ({
+            write: (data) => {
+                log.stopSpinner();
+                stream(data.toString().replace(/\n$/, ""));
+                log.resumeSpinner();
+            }
+        });
+
+        this.container.modem.demuxStream(
+            stream,
+            spinnerSafeStream(console.log),
+            spinnerSafeStream(console.error)
+        );
+
+        await this.container.start();
+
+        debug(`docker - started container ${this.container.id}`);
     }
 
     getSourcePath() {
@@ -332,6 +349,18 @@ class OpenWhiskInvoker {
         return this.debug.port;
     }
 
+    name() {
+        return this.containerName;
+    }
+
+    url() {
+        return this.containerURL || "";
+    }
+
+    timeout() {
+        return this.action.limits.timeout || OPENWHISK_DEFAULTS.timeout;
+    }
+
     async init(actionWithCode) {
         let action;
         if (this.sourceMountAction) {
@@ -345,6 +374,8 @@ class OpenWhiskInvoker {
             };
         }
 
+        const RETRIES = MAX_INIT_RETRY_MS / INIT_RETRY_DELAY_MS;
+
         const response = await fetch(`${this.url()}/init`, {
             method: "POST",
             headers: {
@@ -353,8 +384,14 @@ class OpenWhiskInvoker {
             body: JSON.stringify({
                 value: action
             }),
-            retries: this.timeout() / INIT_RETRY_DELAY_MS,
-            retryDelay: INIT_RETRY_DELAY_MS
+            retryDelay: INIT_RETRY_DELAY_MS,
+            retryOn: function(attempt, error) {
+                // after 1.5 seconds, show retry to user via spinner
+                if (attempt >= 1500 / INIT_RETRY_DELAY_MS) {
+                    log.spinner(`Installing action (retry ${attempt}/${RETRIES})`)
+                }
+                return error !== null && attempt < RETRIES;
+            }
         });
 
         if (response.status === 502) {
@@ -394,18 +431,6 @@ class OpenWhiskInvoker {
             delete this.container;
             log.debug(`docker - stopped container ${this.name()}`);
         }
-    }
-
-    name() {
-        return this.container ? this.container.id : "";
-    }
-
-    url() {
-        return this.containerURL || "";
-    }
-
-    timeout() {
-        return this.action.limits.timeout || OPENWHISK_DEFAULTS.timeout;
     }
 }
 
