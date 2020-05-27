@@ -117,6 +117,12 @@ module.exports = {
         }
     },
 
+    verboseStep: function(...args) {
+        if (this.isVerbose) {
+            this.step(...args);
+        }
+    },
+
     verboseWrite: function(text) {
         if (this.isVerbose) {
             process.stdout.write(text);
@@ -159,6 +165,12 @@ module.exports = {
     /** Stop a running spinner().  */
     stopSpinner: function() {
         spinner.stop();
+    },
+
+    resumeSpinner: function() {
+        if (spinner.text) {
+            this.spinner(spinner.text);
+        }
     },
 
     /** Finish any running spinner and show a log message with a success symbol in front. */

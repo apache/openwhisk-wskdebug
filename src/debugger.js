@@ -36,6 +36,12 @@ function prettyMBytes1024(mb) {
     }
 }
 
+function getNamespaceFromActionMetadata(actionMetadata) {
+    // if the action is inside a package, this returns <namespace>/<package>
+    // but we only want the namespace
+    return actionMetadata.namespace.split("/")[0];
+}
+
 /**
  * Central component of wskdebug.
  */
@@ -74,13 +80,16 @@ class Debugger {
         // get the action metadata
         this.actionMetadata = await this.agentMgr.peekAction();
         log.debug("fetched action metadata from openwhisk");
-        this.wskProps.namespace = this.actionMetadata.namespace;
+        this.wskProps.namespace = getNamespaceFromActionMetadata(this.actionMetadata);
 
         const h = log.highlightColor;
         log.step("Debugging " + h(`/${this.wskProps.namespace}/${this.actionName}`) + " on " + h(this.wskProps.apihost));
 
         // local debug container
         this.invoker = new OpenWhiskInvoker(this.actionName, this.actionMetadata, this.argv, this.wskProps, this.wsk);
+
+        // quick fail for missing requirements such as docker not running
+        await this.invoker.checkIfDockerAvailable();
 
         try {
             // run build initially (would be required by starting container)
@@ -95,7 +104,6 @@ class Debugger {
             // task 1 - start local container
             const containerTask = (async () => {
                 const debug2 = log.newDebug();
-                log.spinner('Starting local container');
 
                 // start container - get it up fast for VSCode to connect within its 10 seconds timeout
                 await this.invoker.startContainer(debug2);
@@ -277,21 +285,29 @@ class Debugger {
             log.log();
             log.log();
             log.debug("shutting down...");
-            log.spinner("Shutting down");
         } else {
             log.debug("aborting start - shutting down ...");
         }
+        log.spinner("Shutting down");
 
         // need to shutdown everything even if some fail, hence tryCatch() for each
 
         if (this.agentMgr) {
             await this.tryCatch(this.agentMgr.shutdown());
         }
+
+        // ------------< critical removal must happen above this line >---------------
+
+        // in VS Code, we will not run beyond this line upon debug stop.
+        // this is because invoker.stop() will kill the container & thus close the
+        // debug port, upon which VS Code kills the debug process (us)
         if (this.invoker) {
             await this.tryCatch(this.invoker.stop());
-            log.debug(`stopped container: ${this.invoker.name()}`);
         }
+
         if (this.watcher) {
+            // this is not critical on a process exit, only if Debugger is used programmatically
+            // and might be reused for a new run()
             await this.tryCatch(this.watcher.stop());
             log.debug("stopped source file watching");
         }
