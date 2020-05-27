@@ -36,6 +36,12 @@ function prettyMBytes1024(mb) {
     }
 }
 
+function getNamespaceFromActionMetadata(actionMetadata) {
+    // if the action is inside a package, this returns <namespace>/<package>
+    // but we only want the namespace
+    return actionMetadata.namespace.split("/")[0];
+}
+
 /**
  * Central component of wskdebug.
  */
@@ -74,7 +80,7 @@ class Debugger {
         // get the action metadata
         this.actionMetadata = await this.agentMgr.peekAction();
         log.debug("fetched action metadata from openwhisk");
-        this.wskProps.namespace = this.actionMetadata.namespace;
+        this.wskProps.namespace = getNamespaceFromActionMetadata(this.actionMetadata);
 
         const h = log.highlightColor;
         log.step("Debugging " + h(`/${this.wskProps.namespace}/${this.actionName}`) + " on " + h(this.wskProps.apihost));
