@@ -447,7 +447,7 @@ class AgentMgr {
                 await deleteActionIfExists(this.wsk, `${this.actionName}_wskdebug_completed`);
 
             } else if (!isStartup) {
-                log.log(`Following helper actions are not removed to make shutdown fast. Remove using --cleanup if desired.`);
+                log.log(`Following helper actions are not removed to keep shutdown fast. Remove using --cleanup if desired.`);
                 log.log(`- ${log.highlightColor(copy)}`);
                 if (!this.concurrency && !this.ngrokAgent) {
                     log.log("- " + log.highlightColor(`${this.actionName}_wskdebug_invoked`));

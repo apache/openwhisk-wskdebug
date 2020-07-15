@@ -169,6 +169,7 @@ class Debugger {
     }
 
     async logDetails() {
+        log.stopSpinner();
         log.log();
         log.highlight("Action     : ", `/${this.wskProps.namespace}/${this.actionName}`);
         if (this.sourcePath) {
