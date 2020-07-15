@@ -191,10 +191,10 @@ function yargsOptions(yargs) {
         type: "boolean",
         describe: "Verbose output. Logs activation parameters and result"
     });
-    yargs.option("s", {
-        alias: "silent",
+    yargs.option("q", {
+        alias: "quiet",
         type: "boolean",
-        describe: "Silent. Only output logs from action container."
+        describe: "Quiet mode. Only output logs from action container."
     });
     yargs.version(require("./package.json").version);
 }
@@ -292,7 +292,7 @@ async function wskdebug(args, isCommandLine=false) {
         }
 
         log.isVerbose = argv.verbose;
-        log.silent(argv.silent);
+        log.quiet(argv.quiet);
 
         try {
             const dbg = new Debugger(argv);

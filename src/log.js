@@ -59,9 +59,9 @@ module.exports = {
 
     isVerbose: false,
 
-    silent: function(silent) {
-        if (silent) {
-            // silent wins
+    quiet: function(quiet) {
+        if (quiet) {
+            // quiet wins
             this.isVerbose = false;
             dbg.disable();
 
@@ -220,6 +220,6 @@ module.exports = {
     isInteractive: spinner.isEnabled
 };
 
-if (process.env.WSKDEBUG_SILENT) {
-    module.exports.silent(true);
+if (process.env.WSKDEBUG_QUIET) {
+    module.exports.quiet(true);
 }
