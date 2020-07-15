@@ -517,7 +517,7 @@ Agent options:
 
 Options:
   -v, --verbose  Verbose output. Logs activation parameters and result           [boolean]
-  -s, --silent   Silent. Only output logs from action container.                 [boolean]
+  -q, --quiet    Quiet mode. Only output logs from action container.             [boolean]
   --version      Show version number                                             [boolean]
   -h, --help     Show help                                                       [boolean]
 ```
