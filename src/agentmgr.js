@@ -388,7 +388,10 @@ class AgentMgr {
             await this.wsk.actions.invoke({
                 name: this.concurrency ? this.actionName : `${this.actionName}_wskdebug_completed`,
                 params: result,
-                blocking: true
+                blocking: true,
+                headers: {
+                    "X-OW-EXTRA-LOGGING": "on"
+                }
             });
         } catch (e) {
             // look for special error codes from agent
