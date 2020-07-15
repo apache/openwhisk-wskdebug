@@ -55,6 +55,7 @@ async function beforeEach() {
 
 function afterEach() {
     delete process.env.WSK_CONFIG_FILE;
+    delete process.env.DOCKER_HOST_IP;
     nock.cleanAll();
 
     // restore working dir from beforeEach()

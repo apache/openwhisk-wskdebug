@@ -273,7 +273,8 @@ class OpenWhiskInvoker {
 
         const containerRuntimePort = `${RUNTIME_PORT}/tcp`;
         const hostRuntimePort = await getPort();
-        this.containerURL = `http://0.0.0.0:${hostRuntimePort}`;
+        const ipAddress = process.env.DOCKER_HOST_IP || "0.0.0.0";
+        this.containerURL = `http://${ipAddress}:${hostRuntimePort}`;
         const containerDebugPort = `${this.debug.internalPort}/tcp`;
 
         const createContainerConfig = {
