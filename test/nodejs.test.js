@@ -576,6 +576,27 @@ describe('nodejs', function() {
         test.assertAllNocksInvoked();
     });
 
+    it("should run an action with custom DOCKER_HOST_IP env var set", async function() {
+        test.mockActionAndInvocation(
+            "myaction",
+            `function main(params) {
+                return {
+                    msg: 'CORRECT',
+                    input: params.input
+                }
+            }`,
+            { input: "test-input" },
+            { msg: "CORRECT", input: "test-input" }
+        );
+
+        // 0.0.0.0 (default) or 127.0.0.1 should work if we are on the docker host
+        process.env.DOCKER_HOST_IP = "127.0.0.1";
+
+        await wskdebug(`myaction -p ${test.port}`);
+
+        test.assertAllNocksInvoked();
+    });
+
     // TODO: test -l livereload connection
 
     // TODO: test agents - conditions (unit test agent code locally)
