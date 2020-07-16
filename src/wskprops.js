@@ -21,20 +21,23 @@
 
 'use strict';
 
+const log = require('./log');
+
 const path = require('path');
 const fs = require('fs-extra');
 
 const ENV_PARAMS = ['OW_APIHOST', 'OW_AUTH', 'OW_NAMESPACE', 'OW_APIGW_ACCESS_TOKEN'];
 
-function getWskPropsFile() {
+function getWskPropsUserHomeFile() {
     const Home = process.env[(process.platform === 'win32') ? 'USERPROFILE' : 'HOME'];
-    return process.env.WSK_CONFIG_FILE || path.format({ dir: Home, base: '.wskprops' });
+    return path.format({ dir: Home, base: '.wskprops' });
 }
 
 function readWskPropsFile() {
-    const wskFilePath = getWskPropsFile();
+    const wskFilePath = process.env.WSK_CONFIG_FILE || getWskPropsUserHomeFile();
 
     if (fs.existsSync(wskFilePath)) {
+        log.verbose(`Using openwhisk credentials from ${wskFilePath}${process.env.WSK_CONFIG_FILE ? " (set by WSK_CONFIG_FILE)" : ""}`);
         return fs.readFileSync(wskFilePath, 'utf8');
     } else {
         return null;
@@ -57,9 +60,19 @@ function getWskProps() {
 
 function getWskEnvProps() {
     const envProps = {};
+    let authEnvVar;
     ENV_PARAMS.forEach((envName) => {
-        if (process.env[envName]) envProps[envName.slice(3).toLowerCase()] = process.env[envName];
+        if (process.env[envName]) {
+            const key = envName.slice(3).toLowerCase();
+            envProps[key] = process.env[envName];
+            if (key === "auth" || key === "api_key") {
+                authEnvVar = envName;
+            }
+        }
     });
+    if (authEnvVar) {
+        log.verbose(`Using openwhisk credential from ${authEnvVar} environment variable`);
+    }
     return envProps;
 }
 
@@ -69,6 +82,10 @@ module.exports = {
         if (props.auth) {
             props.api_key = props.auth;
             delete props.auth;
+        }
+        if (Object.keys(props).length === 0) {
+            log.error(`Error: Missing openwhisk credentials. Found no ~/.wskprops file or WSK_* environment variable.`);
+            process.exit(1);
         }
         return props;
     },

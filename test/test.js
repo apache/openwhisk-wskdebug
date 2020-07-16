@@ -41,7 +41,11 @@ function isDockerInstalled() {
 }
 
 async function beforeEach() {
+    delete process.env.OW_AUTH;
+    delete process.env.OW_NAMESPACE;
+    delete process.env.OW_APIHOST;
     process.env.WSK_CONFIG_FILE = path.join(process.cwd(), "test/wskprops");
+
     openwhisk = nock(FAKE_OPENWHISK_SERVER);
     mockOpenwhiskSwagger(openwhisk);
 
