@@ -21,20 +21,24 @@
 
 'use strict';
 
+const log = require('./log');
+
+const dotenv = require('dotenv');
 const path = require('path');
 const fs = require('fs-extra');
 
 const ENV_PARAMS = ['OW_APIHOST', 'OW_AUTH', 'OW_NAMESPACE', 'OW_APIGW_ACCESS_TOKEN'];
 
-function getWskPropsFile() {
+function getWskPropsUserHomeFile() {
     const Home = process.env[(process.platform === 'win32') ? 'USERPROFILE' : 'HOME'];
-    return process.env.WSK_CONFIG_FILE || path.format({ dir: Home, base: '.wskprops' });
+    return path.format({ dir: Home, base: '.wskprops' });
 }
 
 function readWskPropsFile() {
-    const wskFilePath = getWskPropsFile();
+    const wskFilePath = process.env.WSK_CONFIG_FILE || getWskPropsUserHomeFile();
 
     if (fs.existsSync(wskFilePath)) {
+        log.verbose(`Using openwhisk credentials from ${wskFilePath}${process.env.WSK_CONFIG_FILE ? " (set by WSK_CONFIG_FILE)" : ""}`);
         return fs.readFileSync(wskFilePath, 'utf8');
     } else {
         return null;
@@ -55,17 +59,38 @@ function getWskProps() {
     return wskProps;
 }
 
+function getAioEnvProps() {
+    const envProps = {};
+    // do first, as OW_* ones later shall take precedence
+    if (process.env.AIO_runtime_auth) {
+        envProps.apihost = "https://adobeioruntime.net";
+        envProps.auth = process.env.AIO_runtime_auth;
+        envProps.namespace = process.env.AIO_runtime_namespace;
+        log.verbose(`Using openwhisk credential from AIO_runtime_auth environment variable`);
+    }
+    return envProps;
+}
+
 function getWskEnvProps() {
     const envProps = {};
     ENV_PARAMS.forEach((envName) => {
-        if (process.env[envName]) envProps[envName.slice(3).toLowerCase()] = process.env[envName];
+        if (process.env[envName]) {
+            const key = envName.slice(3).toLowerCase();
+            envProps[key] = process.env[envName];
+            if (key === "auth" || key === "api_key") {
+                log.verbose(`Using openwhisk credential from ${envName} environment variable`);
+            }
+        }
     });
     return envProps;
 }
 
 module.exports = {
     get() {
-        const props = Object.assign(getWskProps(), getWskEnvProps());
+        // load .env file if present
+        dotenv.config();
+
+        const props = Object.assign(getWskProps(), getAioEnvProps(), getWskEnvProps());
         if (props.auth) {
             props.api_key = props.auth;
             delete props.auth;
