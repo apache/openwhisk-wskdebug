@@ -90,7 +90,7 @@ module.exports = {
         // load .env file if present
         dotenv.config();
 
-        const props = Object.assign(getAioEnvProps(), getWskProps(), getWskEnvProps());
+        const props = Object.assign(getWskProps(), getAioEnvProps(), getWskEnvProps());
         if (props.auth) {
             props.api_key = props.auth;
             delete props.auth;

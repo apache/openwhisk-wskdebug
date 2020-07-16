@@ -55,7 +55,7 @@ class Debugger {
 
         this.wskProps = wskprops.get();
         if (Object.keys(this.wskProps).length === 0) {
-            log.error(`Error: Missing openwhisk credentials. Found no ~/.wskprops file or WSK_* environment variable.`);
+            log.error(`Error: Missing openwhisk credentials. Found no ~/.wskprops or .env file or WSK_* environment variable.`);
             process.exit(1);
         }
         if (argv.ignoreCerts) {

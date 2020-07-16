@@ -46,12 +46,18 @@ describe('wskprops', function() {
     });
 
     it("should read WSK_CONFIG_FILE", async function() {
-        process.env.WSK_CONFIG_FILE = "test/wskprops";
+        process.env.WSK_CONFIG_FILE = "some/wskprops";
+        mockFs({
+            "some/wskprops":
+`APIHOST=https://some-wskprops
+NAMESPACE=some-wskprops-namespace
+AUTH=some-wskprops-auth`
+        });
 
         const props = wskprops.get();
-        assert.strictEqual(props.apihost, "https://example.com");
-        assert.strictEqual(props.namespace, "test");
-        assert.strictEqual(props.api_key, "super-secret-key");
+        assert.strictEqual(props.apihost, "https://some-wskprops");
+        assert.strictEqual(props.namespace, "some-wskprops-namespace");
+        assert.strictEqual(props.api_key, "some-wskprops-auth");
     });
 
     it("should read ~/.wskprops", async function() {
@@ -80,7 +86,7 @@ AUTH=home-wskprops-auth`
     });
 
     it("should give OW_* vars precedence over WSK_CONFIG_FILE", async function() {
-        process.env.WSK_CONFIG_FILE = "test/wskprops";
+        process.env.WSK_CONFIG_FILE = "some/wskprops";
 
         process.env.OW_APIHOST = "https://ow_apihost";
         process.env.OW_NAMESPACE = "ow_namespace";
@@ -102,15 +108,32 @@ AUTH=home-wskprops-auth`
         assert.strictEqual(props.api_key, "aio_auth");
     });
 
-    it("should give WSK_CONFIG_FILE precedence over AIO_* vars", async function() {
-        process.env.WSK_CONFIG_FILE = "test/wskprops";
+    it("should give AIO_* vars precedence over WSK_CONFIG_FILE", async function() {
+        process.env.WSK_CONFIG_FILE = "some/wskprops";
         process.env.AIO_runtime_namespace = "aio_namespace";
         process.env.AIO_runtime_auth = "aio_auth";
 
         const props = wskprops.get();
-        assert.strictEqual(props.apihost, "https://example.com");
-        assert.strictEqual(props.namespace, "test");
-        assert.strictEqual(props.api_key, "super-secret-key");
+        assert.strictEqual(props.apihost, "https://adobeioruntime.net");
+        assert.strictEqual(props.namespace, "aio_namespace");
+        assert.strictEqual(props.api_key, "aio_auth");
+    });
+
+    it("should give AIO_* vars precedence over ~/.wskprops", async function() {
+        mockFs({
+            [`${os.homedir()}/.wskprops`]:
+`APIHOST=https://home-wskprops
+NAMESPACE=home-wskprops-namespace
+AUTH=home-wskprops-auth`
+        });
+
+        process.env.AIO_runtime_namespace = "aio_namespace";
+        process.env.AIO_runtime_auth = "aio_auth";
+
+        const props = wskprops.get();
+        assert.strictEqual(props.apihost, "https://adobeioruntime.net");
+        assert.strictEqual(props.namespace, "aio_namespace");
+        assert.strictEqual(props.api_key, "aio_auth");
     });
 
     it("should give OW_* precedence over AIO_* vars", async function() {
@@ -142,17 +165,17 @@ AIO_runtime_auth=aio_auth`
 
     it("should read WSK_CONFIG_FILE from .env", async function() {
         mockFs({
-            ".env": "WSK_CONFIG_FILE=mywskprops",
-            "mywskprops":
-`APIHOST=https://example.com
-NAMESPACE=test
-AUTH=super-secret-key`
+            ".env": "WSK_CONFIG_FILE=some/wskprops",
+            "some/wskprops":
+`APIHOST=https://some-wskprops
+NAMESPACE=some-wskprops-namespace
+AUTH=some-wskprops-auth`
         });
 
         const props = wskprops.get();
-        assert.strictEqual(props.apihost, "https://example.com");
-        assert.strictEqual(props.namespace, "test");
-        assert.strictEqual(props.api_key, "super-secret-key");
+        assert.strictEqual(props.apihost, "https://some-wskprops");
+        assert.strictEqual(props.namespace, "some-wskprops-namespace");
+        assert.strictEqual(props.api_key, "some-wskprops-auth");
     });
 
 });
