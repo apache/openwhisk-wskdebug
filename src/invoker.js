@@ -25,10 +25,12 @@ const Docker = require('dockerode');
 const getPort = require('get-port');
 const dockerUtils = require('./dockerutils');
 const prettyBytes = require('pretty-bytes');
+const isPortReachable = require('is-port-reachable');
 
 const RUNTIME_PORT = 8080;
 const MAX_INIT_RETRY_MS = 20000; // 20 sec
 const INIT_RETRY_DELAY_MS = 200;
+const LABEL_ACTION_NAME = "org.apache.wskdebug.action";
 
 // https://github.com/apache/incubator-openwhisk/blob/master/docs/reference.md#system-limits
 const OPENWHISK_DEFAULTS = {
@@ -71,7 +73,7 @@ class OpenWhiskInvoker {
         this.wskProps = wskProps;
         this.wsk = wsk;
 
-        this.containerName = dockerUtils.safeContainerName(`wskdebug-${this.action.name}-${Date.now()}`);
+        this.containerName = dockerUtils.safeContainerName(`wskdebug-${this.actionName}-${Date.now()}`);
         this.docker = new Docker();
     }
 
@@ -105,6 +107,7 @@ class OpenWhiskInvoker {
             }
 
         } catch (e) {
+            console.log(e);
             log.warn("Could not retrieve runtime images from OpenWhisk, using default image list.", e.message);
         }
         return kinds.images[kind];
@@ -235,6 +238,47 @@ class OpenWhiskInvoker {
         });
     }
 
+    getFullActionName() {
+        return `/${this.wskProps.namespace}/${this.actionName}`;
+    }
+
+    async checkExistingContainers() {
+        // check if the debug port is already in use
+        if (await isPortReachable(this.debug.port)) {
+
+            const containers = await this.docker.listContainers();
+            const fullActionName = this.getFullActionName();
+
+            // then check if there is a left over container from a previous run with that port
+            for (const container of containers) {
+                for (const port of container.Ports) {
+                    if (port.PublicPort === this.debug.port) {
+                        // check if wskdebug container by looking at our label
+                        if (container.Labels[LABEL_ACTION_NAME]) {
+                            if (container.Labels[LABEL_ACTION_NAME] === fullActionName) {
+                                // same action
+                                log.warn(`Replacing container from a previous wskdebug run for this action (${dockerUtils.getContainerName(container)}).`)
+                                const oldContainer = await this.docker.getContainer(container.Id);
+                                await oldContainer.remove({force: true});
+                                return;
+
+                            } else {
+                                // wskdebug of different action
+                                throw new Error(`Debug port ${this.debug.port} already in use by wskdebug for action ${container.Labels[LABEL_ACTION_NAME]}, cotainer ${dockerUtils.getContainerName(container)} (id: ${container.Id}).`);
+                            }
+                        } else {
+                            // some non-wskdebug container
+                            throw new Error(`Debug port ${this.debug.port} already in use by another docker container ${dockerUtils.getContainerName(container)} (id: ${container.Id}).`);
+                        }
+                    }
+                }
+            }
+
+            // some other process uses the port
+            throw new Error(`Debug port ${this.debug.port} already in use.`);
+        }
+    }
+
     async startContainer(debug) {
         if (!await this.isImagePresent(this.image, debug)) {
             // show after 8 seconds, as VS code will timeout after 10 secs by default,
@@ -262,6 +306,8 @@ class OpenWhiskInvoker {
             debug("Pull complete");
         }
 
+        await this.checkExistingContainers();
+
         log.spinner('Starting container');
 
         // links for docker create container config:
@@ -279,6 +325,9 @@ class OpenWhiskInvoker {
 
         const createContainerConfig = {
             name: this.containerName,
+            Labels: {
+                [LABEL_ACTION_NAME]: this.getFullActionName()
+            },
             Image: this.image,
             Cmd: [ 'sh', '-c', this.debug.command ],
             Env: [],
@@ -427,7 +476,14 @@ class OpenWhiskInvoker {
             // log this here for VS Code, will be the last visible log message since
             // we will be killed by VS code after the container is gone after the kill()
             log.log(`Stopping container ${this.name()}.`);
-            await this.container.kill();
+            try {
+                await this.container.remove({ force: true});
+            } catch (e) {
+                // if we get a 404 the container is already gone (our goal), no need to log this error
+                if (e.statusCode !== 404) {
+                    log.exception(e, "Error while removing container");
+                }
+            }
             delete this.container;
             log.debug(`docker - stopped container ${this.name()}`);
         }
