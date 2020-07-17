@@ -413,6 +413,22 @@ class AgentMgr {
     // --------------------------------------< restoring >------------------
 
     async restoreAction(isStartup) {
+        // if a restore is already running, wait for it to finish
+        if (this._restorePromise) {
+            await this._restorePromise;
+            return;
+        }
+
+        // start actual restore and store the promise
+        this._restorePromise = this._restoreAction(isStartup);
+        // wait for the result
+        const result = await this._restorePromise;
+        // make sure to delete the promise once done
+        delete this._restorePromise;
+        return result;
+    }
+
+    async _restoreAction(isStartup) {
         const copy = getActionCopyName(this.actionName);
 
         try {

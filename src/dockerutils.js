@@ -66,7 +66,15 @@ function dockerRunArgs2CreateContainerConfig(args, containerConfig) {
     return containerConfig;
 }
 
+function getContainerName(container) {
+    if (container.Names && container.Names.length >= 1) {
+        // remove leading slash
+        return container.Names[0].substring(1);
+    }
+}
+
 module.exports = {
     safeContainerName,
-    dockerRunArgs2CreateContainerConfig
+    dockerRunArgs2CreateContainerConfig,
+    getContainerName
 };
