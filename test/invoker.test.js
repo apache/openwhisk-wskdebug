@@ -23,6 +23,7 @@ const OpenWhiskInvoker = require('../src/invoker');
 const Docker = require('dockerode');
 const assert = require("assert");
 
+const TEST_IMAGE = "adobeapiplatform/adobe-action-nodejs-v10:3.0.21";
 const ACTION_NAME = "myaction";
 const ACTION_METADATA = {
     exec: {
@@ -42,7 +43,7 @@ const WSK = {
                     runtimes: {
                         nodejs: [{
                             kind: "nodejs",
-                            image: "adobeapiplatform/adobe-action-nodejs-v10:3.0.21"
+                            image: TEST_IMAGE
                         }]
                     }
                 }
@@ -93,6 +94,68 @@ describe('invoker',  function() {
             if (id) {
                 // verify the new container is gone
                 assert.ok(!await isContainerRunning(id), "container was not removed");
+            }
+        }
+    }).timeout(30000);
+
+    it("should replace all previous container for the same action", async function() {
+        // preparation: start multiple "left over" containers
+        async function startContainer(port) {
+            const createContainerConfig = {
+                name: `wskdebug-invoker.test-${port}-${Date.now()}`,
+                Labels: {
+                    "org.apache.wskdebug.action": "/namespace/myaction"
+                },
+                Image: TEST_IMAGE,
+                Cmd: [ 'sh', '-c', "node --expose-gc --inspect=0.0.0.0:9229 app.js" ],
+                Env: [],
+                Volumes: {},
+                ExposedPorts: {
+                    "8080/tcp": {},
+                    "9229/tcp": {}
+                },
+                HostConfig: {
+                    AutoRemove: true,
+                    PortBindings: {
+                        "8080/tcp": [{ HostPort: `${port+100}` }],
+                        "9229/tcp": [{ HostPort: `${port}` }]
+                    },
+                    Memory: 50*1000*1000,
+                    Binds: []
+                }
+            };
+            const container = await docker.createContainer(createContainerConfig);
+            await container.start();
+            return container.id;
+        }
+
+        const previousContainerIds = [];
+        previousContainerIds.push(await startContainer(9701));
+        previousContainerIds.push(await startContainer(9702));
+        previousContainerIds.push(await startContainer(9703));
+
+        // start second container
+        const invoker = new OpenWhiskInvoker(ACTION_NAME, ACTION_METADATA, {}, WSK_PROPS, WSK);
+
+        let id;
+
+        try {
+            await invoker.prepare();
+            await invoker.startContainer(() => {});
+
+            id = invoker.container.id;
+
+            // verify it replaced the container
+            for (const previousContainerId of previousContainerIds) {
+                assert.ok(!await isContainerRunning(previousContainerId), `old container was not removed: ${previousContainerId}`);
+            }
+
+        } finally {
+            await invoker.stop();
+
+            if (id) {
+                // verify the new container is gone
+                assert.ok(!await isContainerRunning(id), "container was not removed after stop()");
             }
         }
     }).timeout(30000);

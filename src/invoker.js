@@ -243,29 +243,29 @@ class OpenWhiskInvoker {
     }
 
     async checkExistingContainers() {
+        let containers = await this.docker.listContainers();
+        const fullActionName = this.getFullActionName();
+
+        // remove all left over containers with the same action name label
+        for (const container of containers) {
+            if (container.Labels[LABEL_ACTION_NAME] === fullActionName) {
+                log.warn(`Removing container from a previous wskdebug run for this action (${dockerUtils.getContainerName(container)}).`)
+                const oldContainer = await this.docker.getContainer(container.Id);
+                await oldContainer.remove({force: true});
+            }
+        }
+
         // check if the debug port is already in use
         if (await isPortReachable(this.debug.port)) {
-
-            const containers = await this.docker.listContainers();
-            const fullActionName = this.getFullActionName();
-
-            // then check if there is a left over container from a previous run with that port
+            containers = await this.docker.listContainers();
+            // then check if it's another container with that port
             for (const container of containers) {
                 for (const port of container.Ports) {
                     if (port.PublicPort === this.debug.port) {
                         // check if wskdebug container by looking at our label
                         if (container.Labels[LABEL_ACTION_NAME]) {
-                            if (container.Labels[LABEL_ACTION_NAME] === fullActionName) {
-                                // same action
-                                log.warn(`Replacing container from a previous wskdebug run for this action (${dockerUtils.getContainerName(container)}).`)
-                                const oldContainer = await this.docker.getContainer(container.Id);
-                                await oldContainer.remove({force: true});
-                                return;
-
-                            } else {
-                                // wskdebug of different action
-                                throw new Error(`Debug port ${this.debug.port} already in use by wskdebug for action ${container.Labels[LABEL_ACTION_NAME]}, cotainer ${dockerUtils.getContainerName(container)} (id: ${container.Id}).`);
-                            }
+                            // wskdebug of different action
+                            throw new Error(`Debug port ${this.debug.port} already in use by wskdebug for action ${container.Labels[LABEL_ACTION_NAME]}, cotainer ${dockerUtils.getContainerName(container)} (id: ${container.Id}).`);
                         } else {
                             // some non-wskdebug container
                             throw new Error(`Debug port ${this.debug.port} already in use by another docker container ${dockerUtils.getContainerName(container)} (id: ${container.Id}).`);
