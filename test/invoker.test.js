@@ -42,7 +42,7 @@ const WSK = {
                     runtimes: {
                         nodejs: [{
                             kind: "nodejs",
-                            image: "openwhisk/action-nodejs-v12:latest"
+                            image: "adobeapiplatform/adobe-action-nodejs-v10:3.0.21"
                         }]
                     }
                 }
