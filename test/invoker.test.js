@@ -96,5 +96,5 @@ describe('invoker',  function() {
                 assert.ok(!await isContainerRunning(id), "container was not removed");
             }
         }
-    }).timeout(10000);
+    }).timeout(30000);
 });
