@@ -67,43 +67,33 @@ async function isContainerRunning(id) {
 describe('invoker',  function() {
 
     it("should detect and replace an existing container", async function() {
-        console.log("start test");
         // preparation: start first container with right fields using dockerode
         const previousInvoker = new OpenWhiskInvoker(ACTION_NAME, ACTION_METADATA, {}, WSK_PROPS, WSK);
-        console.log("prepare");
         await previousInvoker.prepare();
-        console.log("startContainer");
         await previousInvoker.startContainer(() => {});
         const previousContainerId = previousInvoker.container.id;
 
-        console.log("2nd invoker");
         // start second container
         const invoker = new OpenWhiskInvoker(ACTION_NAME, ACTION_METADATA, {}, WSK_PROPS, WSK);
 
         let id;
 
         try {
-            console.log("prepare");
             await invoker.prepare();
-            console.log("startContainer");
             await invoker.startContainer(() => {});
 
             id = invoker.container.id;
 
-            console.log("isContainerRunning");
             // verify it replaced the container (old id gone, new id with same label there)
             assert.ok(!await isContainerRunning(previousContainerId), "container was not replaced");
 
         } finally {
-            console.log("stop");
             await invoker.stop();
 
             if (id) {
-                console.log("isContainerRunning");
                 // verify the new container is gone
                 assert.ok(!await isContainerRunning(id), "container was not removed");
             }
         }
-        console.log("end");
     }).timeout(30000);
 });
