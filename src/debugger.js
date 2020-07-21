@@ -27,6 +27,7 @@ const sleep = require('util').promisify(setTimeout);
 const prettyBytes = require('pretty-bytes');
 const prettyMilliseconds = require('pretty-ms');
 const log = require('./log');
+const inspector = require('inspector');
 
 function prettyMBytes1024(mb) {
     if (mb > 1024) {
@@ -49,6 +50,21 @@ class Debugger {
     constructor(argv) {
         this.startTime = Date.now();
         log.debug("starting debugger");
+
+        // see if our process is debugged, which might not be desired
+        if (inspector.url()) {
+            log.warn(`
++------------------------------------------------------------------------------------------+
+| WARNING: wskdebug itself is debugged and likely NOT the action                           |
+|                                                                                          |
+| This could be an issue with the debug setup. Notably, VS Code changed their debugger     |
+| implementation in June/July 2020 requiring changes to launch.json. For more see:         |
+|                                                                                          |
+|     https://github.com/apache/openwhisk-wskdebug/issues/74                               |
+|                                                                                          |
++------------------------------------------------------------------------------------------+
+            `);
+        }
 
         this.argv = argv;
         this.actionName = argv.action;
