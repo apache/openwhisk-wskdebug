@@ -122,6 +122,16 @@ The action to debug (e.g. `myaction`) must already be deployed.
 <a name="nodejs-visual-studio-code"></a>
 ### Node.js: Visual Studio Code
 
+> ⚠️ **VS Code June 2020 release (version 1.47) breaks wskdebug**
+>
+> Breakpoints will not hit because it debugs the wskdebug process instead of the action.
+>
+> Workaround: set `"debug.javascript.usePreview": false` in your VS Code `settings.json`.
+>
+> A better solution will come with a new VS Code update and wskdebug 1.3.0.
+>
+> More details in [issue #74](https://github.com/apache/openwhisk-wskdebug/issues/74).
+
 Add the configuration below to your [launch.json](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations). Replace `MYACTION` with the name of your action and `ACTION.js` with the source file containing the action. When you run this, it will start wskdebug and should automatically connect the debugger.
 
 ```json
@@ -524,6 +534,22 @@ Options:
 
 <a name="troubleshooting"></a>
 ## Troubleshooting
+
+### Debugger in VS Code does not hit breakpoints
+
+If you use VS Code June 2020 release (version 1.47) it breaks wskdebug due to the new Javascript debugger implementation it includes. Breakpoints will not hit because it debugs the wskdebug process instead of the action.
+
+#### Workaround
+
+Tell VS Code to use the old debugger. In your VS Code `settings.json` set:
+
+```
+"debug.javascript.usePreview": false
+```
+
+A better solution will come with a new VS Code update and wskdebug 1.3.0.
+
+More details in [issue #74](https://github.com/apache/openwhisk-wskdebug/issues/74).
 
 ### Cannot install  - EACCES: permission denied, access '/usr/local/lib/node_modules
 
