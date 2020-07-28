@@ -19,5 +19,37 @@
 
 # Changelog
 
+## v1.3.0
+
+### Features
+
+- support credentials stored in .env file and Adobe I/O Runtime variables #72
+- support reading package name from WSK_PACKAGE env var #10
+- support custom docker host IPs #67
+- add -q/—quiet option #56 #68
+- [nodejs] pass through DEBUG, NODE_DEBUG environment variables #43
+
+### Improvements
+
+- use docker api client instead of `docker` child process #54
+- drop concurrency api check for performance #58
+- nicer console ui using spinner #8
+- performance: load action sources lazily on container  #53
+- validate source path etc. before async installation of agent #52
+- improve startup and shutdown speed #41
+- make ngrok an optional dependency #22
+
+### Fixes
+
+- warn if new incompatible vs code debugger is invoking in and document workaround #76
+- detect if debug port is already used, e.g. by left over container #59
+- fix activation DB agent on Adobe I/O Runtime requiring `X-OW-EXTRA-LOGGING` header #49
+- ignore 503 errors with activation db agent #44
+- include hidden `--ignoreCerts` option in usage info #42
+- restoring action sometimes fails from vscode, then on next run polling fails #25
+- fix concurrency error when using wskdebug with IBM Cloud Functions #7
+- [nodejs] mount-require is only reloading the main source file, not any other required files #9
+
+
 ## v1.2.0
 * Initial release under new Apache OpenWhisk ownership and new name @openwhisk/wskdebug
