@@ -16,7 +16,7 @@
 #
 
 # docker build for testing wskdebug installation
-FROM circleci/node
+FROM circleci/node:lts
 LABEL type=test
 
 WORKDIR /home/circleci
