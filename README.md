@@ -122,17 +122,32 @@ The action to debug (e.g. `myaction`) must already be deployed.
 <a name="nodejs-visual-studio-code"></a>
 ### Node.js: Visual Studio Code
 
-> ⚠️ **VS Code June 2020 release (version 1.47) breaks wskdebug**
->
-> Breakpoints will not hit because it debugs the wskdebug process instead of the action.
->
-> Workaround: set `"debug.javascript.usePreview": false` in your VS Code `settings.json`.
->
-> A better solution will come with a new VS Code update and wskdebug 1.3.0.
->
-> More details in [issue #74](https://github.com/apache/openwhisk-wskdebug/issues/74).
-
 Add the configuration below to your [launch.json](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations). Replace `MYACTION` with the name of your action and `ACTION.js` with the source file containing the action. When you run this, it will start wskdebug and should automatically connect the debugger.
+
+```json
+    "configurations": [
+        {
+            "type": "pwa-node",
+            "request": "launch",
+            "name": "wskdebug MYACTION", // <-- adjust name for debug drop-down
+            "attachSimplePort": 0,
+            "killBehavior": "polite",
+            "runtimeExecutable": "wskdebug",
+            "args": [
+                "MYACTION",  // <-- replace with name of the action
+                "ACTION.js", // <-- replace with local path to action source file
+                "--cleanup", // remove helper actions on shutdown
+                "-l",        // enable live-reload
+                "-v"         // log parameters and results
+            ],
+            "localRoot": "${workspaceFolder}",
+            "remoteRoot": "/code",
+            "outputCapture": "std"
+        }
+    ]
+```
+
+In **VS Code versions <= 1.47** use the config below. If you use 1.47, you also have to set `"debug.javascript.usePreview": false` in your VS Code `settings.json`. See also [issue #74](https://github.com/apache/openwhisk-wskdebug/issues/74).
 
 ```json
     "configurations": [
@@ -149,7 +164,7 @@ Add the configuration below to your [launch.json](https://code.visualstudio.com/
     ]
 ```
 
-Stop the debugger in VS Code to end the debugging session and `wskdebug`.
+After you are done with the debugging, stop the debugger in VS Code to end the debugging session and `wskdebug`.
 
 This snippets enables browser LiveReloading using `-l`. For other reloading options, see [live reloading](#live-reloading).
 
@@ -175,9 +190,11 @@ To use custom credentials from a custom `.wskprops` and/or use a developer-speci
     ```json
     "configurations": [
         {
-            "type": "node",
+            "type": "pwa-node",
             "request": "launch",
             "name": "wskdebug",
+            "attachSimplePort": 0,
+            "killBehavior": "polite",
             "runtimeExecutable": "wskdebug",
             "args": [ "MYACTION", "ACTION.js", "-l" ],
             "localRoot": "${workspaceFolder}",
@@ -200,8 +217,10 @@ Here is a `.vscode/launch.json` example that uses compounds to expose a config s
 {
   "configurations": [
     {
-      "type": "node",
+      "type": "pwa-node",
       "request": "launch",
+      "attachSimplePort": 0,
+      "killBehavior": "polite",
       "name": "mypackage/action1",
       "runtimeExecutable": "wskdebug",
       "args": [
@@ -213,8 +232,10 @@ Here is a `.vscode/launch.json` example that uses compounds to expose a config s
       "outputCapture": "std"
     },
     {
-      "type": "node",
+      "type": "pwa-node",
       "request": "launch",
+      "attachSimplePort": 0,
+      "killBehavior": "polite",
       "name": "mypackage/action2",
       "runtimeExecutable": "wskdebug",
       "args": [
