@@ -124,7 +124,7 @@ The action to debug (e.g. `myaction`) must already be deployed.
 
 Add the configuration below to your [launch.json](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations). Replace `MYACTION` with the name of your action and `ACTION.js` with the source file containing the action. When you run this, it will start wskdebug and should automatically connect the debugger.
 
-```json
+```
     "configurations": [
         {
             "type": "pwa-node",
@@ -149,9 +149,10 @@ Add the configuration below to your [launch.json](https://code.visualstudio.com/
 
 In **VS Code versions <= 1.47** use the config below. If you use 1.47, you also have to set `"debug.javascript.usePreview": false` in your VS Code `settings.json`. See also [issue #74](https://github.com/apache/openwhisk-wskdebug/issues/74).
 
-```json
+```
     "configurations": [
         {
+            // legacy launch config for VS Code <= 1.47
             "type": "node",
             "request": "launch",
             "name": "wskdebug MYACTION",
