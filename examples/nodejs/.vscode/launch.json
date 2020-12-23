@@ -5,9 +5,27 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "pwa-node",
+            "request": "launch",
+            "attachSimplePort": 0, // instead of "port", makes it auto-select a free debug port
+            "killBehavior": "polite",
+            "name": "wskdebug",
+            "runtimeExecutable": "wskdebug",
+            "args": [
+                "wskdebug-examples/webaction",
+                "${workspaceFolder}/webaction.js",
+                "--cleanup", // remove helper actions on shutdown (takes longer)
+                "-l", // enable live-reload
+                "-v"  // log parameters and results
+            ],
+            "localRoot": "${workspaceFolder}",
+            "remoteRoot": "/code",
+            "outputCapture": "std"
+        },
+        {
             "type": "node",
             "request": "launch",
-            "name": "wskdebug sample webaction",
+            "name": "wskdebug (VS Code <= 1.47)",
             "runtimeExecutable": "wskdebug",
             "args": [
                 "wskdebug-examples/webaction",
@@ -20,8 +38,10 @@
             "outputCapture": "std"
         },
         {
-            "type": "node",
+            "type": "pwa-node",
             "request": "launch",
+            "attachSimplePort": 0,
+            "killBehavior": "polite",
             "name": "wskdebug ngrok",
             "runtimeExecutable": "wskdebug",
             "args": [
@@ -35,24 +55,29 @@
             "outputCapture": "std"
         },
         {
-            "type": "node",
+            "type": "pwa-node",
             "request": "launch",
+            "attachSimplePort": 0,
+            "killBehavior": "polite",
             "name": "wskdebug with build",
             "runtimeExecutable": "wskdebug",
             "args": [
                 "wskdebug-examples/webaction",
                 "${workspaceFolder}/webaction.js",
                 "-l",
-                "--on-build", "mkdir build/; cp webaction.js build/",
-                "--build-path", "build/webaction.js"
+                "--on-build", "mkdir -p build/; cp webaction.js build/",
+                "--build-path", "build/webaction.js",
+                "--cleanup"
             ],
             "localRoot": "${workspaceFolder}",
             "remoteRoot": "/code",
             "outputCapture": "std"
         },
         {
-            "type": "node",
+            "type": "pwa-node",
             "request": "launch",
+            "attachSimplePort": 0,
+            "killBehavior": "polite",
             "name": "wskdebug with WSK_PACKAGE",
             "runtimeExecutable": "wskdebug",
             "args": [
