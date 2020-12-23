@@ -282,6 +282,7 @@ function mockActionDoubleInvocation(action, code, params, result1, runBetween, r
     nockActivation(
         action,
         body => {
+            console.log("[test] mockActionDoubleInvocation: asserting result1")
             assert.deepStrictEqual(body, result1);
             return true;
         }
@@ -298,8 +299,8 @@ function mockActionDoubleInvocation(action, code, params, result1, runBetween, r
     result2.$activationId = activationId2;
 
     nockActivation(action, body => body.$waitForActivation === true)
-        .reply(200, () => {
-            runBetween();
+        .reply(200, async () => {
+            await runBetween();
             return {
                 response: {
                     result: Object.assign(params, { $activationId: activationId2 })
@@ -311,6 +312,7 @@ function mockActionDoubleInvocation(action, code, params, result1, runBetween, r
     nockActivation(
         action,
         body => {
+            console.log("[test] mockActionDoubleInvocation: asserting result2")
             assert.deepStrictEqual(body, result2);
             return true;
         }

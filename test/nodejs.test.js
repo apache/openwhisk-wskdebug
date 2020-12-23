@@ -490,7 +490,7 @@ describe('nodejs', function() {
             { msg: "CORRECT/RESULT" },
             async () => {
                 // change action.js to test reloading
-                console.log("simulating modifiying action.js...");
+                console.log("[test] simulating modifiying action.js...");
 
                 fs.writeFileSync(`action.js`,
                     `
@@ -501,7 +501,7 @@ describe('nodejs', function() {
                     }
                 `);
 
-                await sleep(1);
+                await sleep(100);
             },
             { msg: "SECOND" },
             true // binary
