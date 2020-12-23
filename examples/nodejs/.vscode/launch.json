@@ -5,11 +5,11 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "wskdebug",
             "type": "pwa-node",
             "request": "launch",
             "attachSimplePort": 0, // instead of "port", makes it auto-select a free debug port
             "killBehavior": "polite",
-            "name": "wskdebug",
             "runtimeExecutable": "wskdebug",
             "args": [
                 "wskdebug-examples/webaction",
@@ -23,9 +23,9 @@
             "outputCapture": "std"
         },
         {
+            "name": "wskdebug (VS Code <= 1.47)",
             "type": "node",
             "request": "launch",
-            "name": "wskdebug (VS Code <= 1.47)",
             "runtimeExecutable": "wskdebug",
             "args": [
                 "wskdebug-examples/webaction",
@@ -38,11 +38,11 @@
             "outputCapture": "std"
         },
         {
+            "name": "wskdebug ngrok",
             "type": "pwa-node",
             "request": "launch",
             "attachSimplePort": 0,
             "killBehavior": "polite",
-            "name": "wskdebug ngrok",
             "runtimeExecutable": "wskdebug",
             "args": [
                 "wskdebug-examples/webaction",
@@ -55,11 +55,11 @@
             "outputCapture": "std"
         },
         {
+            "name": "wskdebug with build",
             "type": "pwa-node",
             "request": "launch",
             "attachSimplePort": 0,
             "killBehavior": "polite",
-            "name": "wskdebug with build",
             "runtimeExecutable": "wskdebug",
             "args": [
                 "wskdebug-examples/webaction",
@@ -74,11 +74,11 @@
             "outputCapture": "std"
         },
         {
+            "name": "wskdebug with WSK_PACKAGE",
             "type": "pwa-node",
             "request": "launch",
             "attachSimplePort": 0,
             "killBehavior": "polite",
-            "name": "wskdebug with WSK_PACKAGE",
             "runtimeExecutable": "wskdebug",
             "args": [
                 "webaction"
