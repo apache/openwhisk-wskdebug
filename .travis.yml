@@ -35,4 +35,4 @@ before_install:
   - ./travis/scancode.sh
 
 script:
-  - npm test; cat build/mocha.test.log
+  - npm run test-verbose

@@ -220,6 +220,6 @@ module.exports = {
     isInteractive: spinner.isEnabled
 };
 
-if (process.env.WSKDEBUG_QUIET) {
+if (process.env.WSKDEBUG_QUIET === "1") {
     module.exports.quiet(true);
 }
