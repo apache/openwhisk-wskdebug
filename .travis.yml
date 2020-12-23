@@ -35,7 +35,4 @@ before_install:
   - ./travis/scancode.sh
 
 script:
-  - npm test
-
-after_failure:
-  - cat build/mocha.test.log
+  - npm test; cat build/mocha.test.log
