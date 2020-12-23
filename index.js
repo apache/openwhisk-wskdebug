@@ -150,7 +150,7 @@ function yargsOptions(yargs) {
         alias: "condition",
         type: "string",
         group: "Agent options:",
-        describe: "Hit condition to trigger debugger. Javascript expression evaluated against input parameters. Example: 'debug == 'true'"
+        describe: "Hit condition to trigger debugger. Javascript expression evaluated against input parameters. Example: `debug == 'true'`"
     });
     yargs.option("agent-timeout", {
         type: "number",
