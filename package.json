@@ -19,7 +19,7 @@
         "wskdebug": "./wskdebug.js"
     },
     "scripts": {
-        "pretest": "npm install --no-save ngrok",
+        "pretest": "npm install --no-save ngrok && docker pull adobeapiplatform/adobe-action-nodejs-v10:3.0.21",
         "test": "WSKDEBUG_QUIET=${WSKDEBUG_QUIET:-1} nyc mocha test/**/*.test.js",
         "test-verbose": "WSKDEBUG_QUIET=0 DEBUG=wskdebug npm run test -- -v",
         "posttest": "test/install/test-npm-install.sh && eslint .",
