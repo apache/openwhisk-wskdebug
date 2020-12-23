@@ -127,9 +127,9 @@ Add the configuration below to your [launch.json](https://code.visualstudio.com/
 ```
     "configurations": [
         {
+            "name": "wskdebug MYACTION", // <-- adjust name for debug drop-down
             "type": "pwa-node",
             "request": "launch",
-            "name": "wskdebug MYACTION", // <-- adjust name for debug drop-down
             "attachSimplePort": 0,
             "killBehavior": "polite",
             "runtimeExecutable": "wskdebug",
@@ -153,9 +153,9 @@ In **VS Code versions <= 1.47** use the config below. If you use 1.47, you also 
     "configurations": [
         {
             // legacy launch config for VS Code <= 1.47
+            "name": "wskdebug MYACTION",
             "type": "node",
             "request": "launch",
-            "name": "wskdebug MYACTION",
             "runtimeExecutable": "wskdebug",
             "args": [ "MYACTION", "ACTION.js", "-l" ],
             "localRoot": "${workspaceFolder}",
@@ -191,9 +191,9 @@ To use custom credentials from a custom `.wskprops` and/or use a developer-speci
     ```json
     "configurations": [
         {
+            "name": "wskdebug",
             "type": "pwa-node",
             "request": "launch",
-            "name": "wskdebug",
             "attachSimplePort": 0,
             "killBehavior": "polite",
             "runtimeExecutable": "wskdebug",
@@ -218,11 +218,11 @@ Here is a `.vscode/launch.json` example that uses compounds to expose a config s
 {
   "configurations": [
     {
+      "name": "mypackage/action1",
       "type": "pwa-node",
       "request": "launch",
       "attachSimplePort": 0,
       "killBehavior": "polite",
-      "name": "mypackage/action1",
       "runtimeExecutable": "wskdebug",
       "args": [
         "mypackage/action1",
@@ -233,11 +233,11 @@ Here is a `.vscode/launch.json` example that uses compounds to expose a config s
       "outputCapture": "std"
     },
     {
+      "name": "mypackage/action2",
       "type": "pwa-node",
       "request": "launch",
       "attachSimplePort": 0,
       "killBehavior": "polite",
-      "name": "mypackage/action2",
       "runtimeExecutable": "wskdebug",
       "args": [
         "mypackage/action2",
