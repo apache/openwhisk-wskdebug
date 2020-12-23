@@ -69,7 +69,6 @@ describe('wskdebug cli', function() {
 
         const stdio = test.endCaptureStdout();
 
-        assert.equal(stdio.stderr, "");
         // testing a couple strings that should rarely change
         assert(stdio.stdout.includes("Debug an Apache OpenWhisk <action> by forwarding its activations to a local docker"));
         assert(stdio.stdout.includes("Supported kinds:"));
@@ -87,7 +86,6 @@ describe('wskdebug cli', function() {
         await wskdebug(`--version`);
 
         const stdio = test.endCaptureStdout();
-        assert.equal(stdio.stderr, "");
         assert.equal(stripAnsi(stdio.stdout.trim()), require(`${process.cwd()}/package.json`).version);
     });
 

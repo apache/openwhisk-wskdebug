@@ -20,8 +20,9 @@
     },
     "scripts": {
         "pretest": "npm install --no-save ngrok",
-        "test": "WSKDEBUG_QUIET=1 nyc mocha test/**/*.test.js && test/install/test-npm-install.sh",
-        "posttest": "eslint .",
+        "test": "WSKDEBUG_QUIET=${WSKDEBUG_QUIET:-1} nyc mocha test/**/*.test.js",
+        "test-verbose": "WSKDEBUG_QUIET=0 DEBUG=wskdebug npm run test -- -v",
+        "posttest": "test/install/test-npm-install.sh && eslint .",
         "report-coverage": "nyc report --reporter=json && codecov -f coverage/coverage-final.json"
     },
     "nyc": {
