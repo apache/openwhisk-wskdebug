@@ -118,7 +118,7 @@ class OpenWhiskInvoker {
 
         // this must run after initial build was kicked off in Debugger so that built files are present
 
-        // kind and image - precendence:
+        // kind and image - precedence:
         // 1. arguments (this.image)
         // 2. action (action.exec.image)
         // 3. defaults (kinds.images[kind])
