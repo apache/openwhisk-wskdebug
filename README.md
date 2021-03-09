@@ -42,7 +42,7 @@ Live development of a web action using `wskdebug`:
 
 ![screen cast showing debugging of a web action using wskdebug](resources/wskdebug-demo.gif)
 
-_On the left [Visual Studio Code](https://code.visualstudio.com) in debug mode. On the right, a browser with the page rendered by the web action. The developer notices the feature of handling the `name` is not implemented yet. A breakpoint shows them that `name` is set, but it's not used. They add the code to respond and greet with `name`. Simply by saving the code, the browser auto reloads the page and the breakpoint is hit again. They step through to see that the new code is working fine, and get the expected result in the browser: "Hello, Alex!"._
+_On the left [Visual Studio Code](https://code.visualstudio.com) in debug mode. On the right, a browser with the page rendered by the web action. The developer notices the feature of handling the `name` is not implemented yet. A breakpoint shows them that `name` is set, but it's not used. They add the code to respond and greet with `name`. Simply by saving the code, the browser auto reloads the page, and the breakpoint is hit again. They step through to see that the new code is working fine, and get the expected result in the browser: "Hello, Alex!"._
 
 ---
 
@@ -264,7 +264,7 @@ Alternatively, if you don't want to use compounds, you can have a separate VS co
 
 With `launch`, VS Code will automatically pick an unused debug port and pass it as `--inspect=port` param to `wskdebug` as if it were `node`, and `wskdebug` understands this as alias for its `--port` argument.
 
-Otherwise you have to make sure to pass a different `--port` to each `wskdebug`. Similarly, if you use browser live reloading for multiple actions, you must specify different ports for that uing `--lr-port` on each instance.
+Otherwise you have to make sure to pass a different `--port` to each `wskdebug`. Similarly, if you use a browser live reloading for multiple actions, you must specify different ports for that uing `--lr-port` on each instance.
 
 <a name="nodejs-plain-usage"></a>
 ### Node.js: Plain usage
@@ -782,4 +782,4 @@ Releases are done using the [Apache OpenWhisk Release Process](https://github.co
 <a name="licensing"></a>
 ## Licensing
 
-This project is licensed under the Apache V2 License. See [LICENSE](LICENSE) for more information.
+This project is licensed under the Apache V2 License. See [LICENSE](LICENSE.txt) for more information.
