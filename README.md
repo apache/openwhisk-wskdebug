@@ -358,7 +358,7 @@ To enable debug logs in your action, you can set environment variables:
 To enable debugging for kinds/languages not supported out of the box, you can specify these cli arguments manually:
 
 * `--internal-port` the actual language debug port inside the container
-* `--command` override the docker run command for the image to e.g. pass a debug flag to the language enviroment
+* `--command` override the docker run command for the image to e.g. pass a debug flag to the language environment
 * `--port` (optional) the port as it will be exposed from the container to the host, i.e. to what clients will connect to. defaults to `--internal-port` if set
 * `--image` (optional) control the docker image used as runtime for the action
 
@@ -415,7 +415,7 @@ The extensions to watch can be changed through the `--watch-exts` argument, e.g.
 <a name="hit-condition"></a>
 ### Hit condition
 
-If an action is invoked frequently but you only want to catch certain invocations, such as ones you control, you can set a condition to limit when the debugger should be invoked using `-c` or `--condition`. This must be a javascript expression which will be evaluated agains the input parameters.
+If an action is invoked frequently but you only want to catch certain invocations, such as ones you control, you can set a condition to limit when the debugger should be invoked using `-c` or `--condition`. This must be a javascript expression which will be evaluated against the input parameters.
 
 For example, with a condition like this:
 
