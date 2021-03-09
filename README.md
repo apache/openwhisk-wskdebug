@@ -264,7 +264,7 @@ Alternatively, if you don't want to use compounds, you can have a separate VS co
 
 With `launch`, VS Code will automatically pick an unused debug port and pass it as `--inspect=port` param to `wskdebug` as if it were `node`, and `wskdebug` understands this as alias for its `--port` argument.
 
-Otherwise you have to make sure to pass a different `--port` to each `wskdebug`. Similarly, if you use a browser live reloading for multiple actions, you must specify different ports for that uing `--lr-port` on each instance.
+Otherwise you have to make sure to pass a different `--port` to each `wskdebug`. Similarly, if you use browser live reloading for multiple actions, you must specify different ports for that uing `--lr-port` on each instance.
 
 <a name="nodejs-plain-usage"></a>
 ### Node.js: Plain usage
