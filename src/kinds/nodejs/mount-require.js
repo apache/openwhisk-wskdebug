@@ -17,6 +17,8 @@
 
 /* eslint-disable strict */
 
+const nodePath = require('path');
+
 // Variables will be replaced before the code is loaded
 
 // path to actual action sources
@@ -36,6 +38,7 @@ let firstRun = true;
 
 // eslint-disable-next-line no-unused-vars
 function main(args) { // lgtm [js/unused-local-variable]
+    process.chdir(nodePath.dirname(path));
 
     if (firstRun) {
         const start = Date.now();

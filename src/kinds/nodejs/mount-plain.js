@@ -18,6 +18,7 @@
 /* eslint-disable strict */
 
 const fs = require('fs');
+const nodePath = require('path');
 
 // Variables will be replaced before the code is loaded
 
@@ -43,6 +44,8 @@ function load(path) {
 
 // eslint-disable-next-line no-unused-vars
 function main(args) { // lgtm [js/unused-local-variable]
+    process.chdir(nodePath.dirname(path));
+
     // load code again on every new invocation
     const actionMain = load(path);
 
