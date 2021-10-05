@@ -28,7 +28,7 @@ github actions: [![Actions Status](https://github.com/apache/openwhisk-wskdebug/
 [![npm version](https://img.shields.io/npm/v/@openwhisk/wskdebug)](https://www.npmjs.com/package/@openwhisk/wskdebug)
 ![](https://img.shields.io/badge/cli-wskdebug-brightgreen)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
-[![Travis](https://travis-ci.com/apache/openwhisk-wskdebug.svg?branch=master)](https://travis-ci.com/apache/openwhisk-wskdebug)
+[![Travis](https://travis-ci.com/apache/openwhisk-wskdebug.svg?branch=master)](https://travis-ci.com/github/apache/openwhisk-wskdebug)
 
 
 wskdebug
