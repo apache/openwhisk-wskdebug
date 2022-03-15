@@ -17,7 +17,7 @@
 
 'use strict';
 
-const fetch = require('fetch-retry')(require('isomorphic-fetch'));
+const fetch = require('fetch-retry')(require('cross-fetch'));
 const kinds = require('./kinds/kinds');
 const path = require('path');
 const log = require("./log");
