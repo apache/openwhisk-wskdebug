@@ -32,7 +32,7 @@ RUN npm install -g openwhisk-wskdebug.tgz
 RUN wskdebug -h && wskdebug --version
 
 # specifying --ngrok should give a specific error message
-RUN wskdebug --ngrok myaction 2>&1 | grep -A 10 "ngrok dependency required for --ngrok is not installed"
+RUN wskdebug --ngrok myaction
 
 # fix by installing ngrok
 RUN npm install -g ngrok --unsafe-perm=true
