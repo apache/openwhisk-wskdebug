@@ -25,12 +25,6 @@
         "posttest": "test/install/test-npm-install.sh && eslint .",
         "report-coverage": "nyc report --reporter=json && codecov -f coverage/coverage-final.json"
     },
-    "files": [
-        ".npmrc",
-        "agent",
-        "resources",
-        "src"
-    ],
     "nyc": {
         "all": true,
         "es-modules": false,
