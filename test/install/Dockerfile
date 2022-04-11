@@ -27,7 +27,7 @@ COPY wskprops .wskprops
 # ~/.local/bin is already on the PATH
 RUN mkdir ~/.local && npm config set prefix '~/.local'
 
-RUN npm install -g openwhisk-wskdebug.tgz --legacy-peer-deps
+RUN npm install -g openwhisk-wskdebug.tgz
 
 RUN wskdebug -h && wskdebug --version
 
