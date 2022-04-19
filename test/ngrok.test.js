@@ -24,7 +24,7 @@ let Debugger = require("../src/debugger");
 
 const assert = require('assert');
 const nock = require('nock');
-const fetch = require('isomorphic-fetch');
+const fetch = require('node-fetch');
 const mockRequire = require('mock-require');
 
 function mockNgrokLibrary(connect, kill) {
