@@ -64,6 +64,11 @@
     "peerDependencies": {
         "ngrok": "^3.2.7"
     },
+    "peerDependenciesMeta": {
+        "ngrok": {
+          "optional": true
+        }
+    },    
     "devDependencies": {
         "chmodr": "^1.2.0",
         "codecov": "^3.6.5",
