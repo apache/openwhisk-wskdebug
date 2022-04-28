@@ -1,6 +1,6 @@
 {
     "name": "@openwhisk/wskdebug",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "description": "Debugging and live development tool for Apache OpenWhisk",
     "license": "Apache-2.0",
     "author": "Apache Software Foundation",
@@ -66,9 +66,9 @@
     },
     "peerDependenciesMeta": {
         "ngrok": {
-          "optional": true
+            "optional": true
         }
-    },    
+    },
     "devDependencies": {
         "chmodr": "^1.2.0",
         "codecov": "^3.6.5",
