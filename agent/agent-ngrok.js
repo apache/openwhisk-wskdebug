@@ -66,7 +66,7 @@ async function doMain(args) {
                 console.log("response: ", resp.statusCode);
                 let body = '';
 
-                // A chunk of data has been recieved.
+                // A chunk of data has been received.
                 resp.on('data', (chunk) => {
                     body += chunk;
                 });

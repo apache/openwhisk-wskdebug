@@ -28,7 +28,7 @@ github actions: [![Actions Status](https://github.com/apache/openwhisk-wskdebug/
 [![npm version](https://img.shields.io/npm/v/@openwhisk/wskdebug)](https://www.npmjs.com/package/@openwhisk/wskdebug)
 ![](https://img.shields.io/badge/cli-wskdebug-brightgreen)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
-[![Travis](https://travis-ci.com/apache/openwhisk-wskdebug.svg?branch=master)](https://travis-ci.com/apache/openwhisk-wskdebug)
+[![Travis](https://travis-ci.com/apache/openwhisk-wskdebug.svg?branch=master)](https://travis-ci.com/github/apache/openwhisk-wskdebug)
 
 
 wskdebug
@@ -42,7 +42,7 @@ Live development of a web action using `wskdebug`:
 
 ![screen cast showing debugging of a web action using wskdebug](resources/wskdebug-demo.gif)
 
-_On the left [Visual Studio Code](https://code.visualstudio.com) in debug mode. On the right, a browser with the page rendered by the web action. The developer notices the feature of handling the `name` is not implemented yet. A breakpoint shows them that `name` is set, but it's not used. They add the code to respond and greet with `name`. Simply by saving the code, the browser auto reloads the page and the breakpoint is hit again. They step through to see that the new code is working fine, and get the expected result in the browser: "Hello, Alex!"._
+_On the left [Visual Studio Code](https://code.visualstudio.com) in debug mode. On the right, a browser with the page rendered by the web action. The developer notices the feature of handling the `name` is not implemented yet. A breakpoint shows them that `name` is set, but it's not used. They add the code to respond and greet with `name`. Simply by saving the code, the browser auto reloads the page, and the breakpoint is hit again. They step through to see that the new code is working fine, and get the expected result in the browser: "Hello, Alex!"._
 
 ---
 
@@ -358,7 +358,7 @@ To enable debug logs in your action, you can set environment variables:
 To enable debugging for kinds/languages not supported out of the box, you can specify these cli arguments manually:
 
 * `--internal-port` the actual language debug port inside the container
-* `--command` override the docker run command for the image to e.g. pass a debug flag to the language enviroment
+* `--command` override the docker run command for the image to e.g. pass a debug flag to the language environment
 * `--port` (optional) the port as it will be exposed from the container to the host, i.e. to what clients will connect to. defaults to `--internal-port` if set
 * `--image` (optional) control the docker image used as runtime for the action
 
@@ -415,7 +415,7 @@ The extensions to watch can be changed through the `--watch-exts` argument, e.g.
 <a name="hit-condition"></a>
 ### Hit condition
 
-If an action is invoked frequently but you only want to catch certain invocations, such as ones you control, you can set a condition to limit when the debugger should be invoked using `-c` or `--condition`. This must be a javascript expression which will be evaluated agains the input parameters.
+If an action is invoked frequently but you only want to catch certain invocations, such as ones you control, you can set a condition to limit when the debugger should be invoked using `-c` or `--condition`. This must be a javascript expression which will be evaluated against the input parameters.
 
 For example, with a condition like this:
 
@@ -782,4 +782,4 @@ Releases are done using the [Apache OpenWhisk Release Process](https://github.co
 <a name="licensing"></a>
 ## Licensing
 
-This project is licensed under the Apache V2 License. See [LICENSE](LICENSE) for more information.
+This project is licensed under the Apache V2 License. See [LICENSE](LICENSE.txt) for more information.

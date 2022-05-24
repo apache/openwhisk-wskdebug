@@ -19,6 +19,32 @@
 
 # Changelog
 
+## v1.4.0
+
+### Improvements
+
+- travis: log detailed test output on failure
+- travis: get most verbose logging while keeping standard npm test quiet
+- chore: example/nodejs: put name first in vs code launch.json examples
+- chore: README: put name first in vs code launch.json examples
+- chore: configure more github project properties vis asf.yaml #88
+- chore: update openwhisk-client-js to 3.21.4
+
+### Fixes
+
+- fix: swap isomorphic-fetch for node-fetch for security issue #96
+- fix: disable installation of peer dependencies (npm@7 default) #97
+- fix: pull image before test runs - should fix flaky agentmgr.test.js tests in Travis #84
+- fix: wskdebug does not work with new VS Code 1.48 debugger #74
+- fix: use lts node, instead of latest (test Dockerfile)
+- fix: fix travis badge url #92
+- fix: formatting for github and usage output
+- fix: spelling #86
+- fix: link and grammar #87
+- chore: various dependabot dependency updates #99 #100 #102 #103
+- chore: update copyright notice #90
+- chore: npm audit fixes
+
 ## v1.3.0
 
 ### Features

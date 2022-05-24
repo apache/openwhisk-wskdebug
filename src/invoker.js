@@ -17,7 +17,7 @@
 
 'use strict';
 
-const fetch = require('fetch-retry')(require('isomorphic-fetch'));
+const fetch = require('fetch-retry')(require('node-fetch'));
 const kinds = require('./kinds/kinds');
 const path = require('path');
 const log = require("./log");
@@ -118,7 +118,7 @@ class OpenWhiskInvoker {
 
         // this must run after initial build was kicked off in Debugger so that built files are present
 
-        // kind and image - precendence:
+        // kind and image - precedence:
         // 1. arguments (this.image)
         // 2. action (action.exec.image)
         // 3. defaults (kinds.images[kind])
