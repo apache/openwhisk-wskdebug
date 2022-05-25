@@ -43,6 +43,7 @@ github:
     merge: false
     squash: true
     rebase: true
+  del_branch_on_merge: true
   features:
     issues: true
 
