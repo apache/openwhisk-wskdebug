@@ -55,7 +55,7 @@
         "livereload": "^0.9.1",
         "manakin": "^0.5.2",
         "node-fetch": "^2.6.7",
-        "openwhisk": "^3.21.4",
+        "openwhisk": "^3.21.7",
         "ora": "^4.0.3",
         "pretty-bytes": "^5.3.0",
         "pretty-ms": "^6.0.1",
